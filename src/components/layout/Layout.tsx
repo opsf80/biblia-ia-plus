@@ -14,7 +14,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex-1">
         {children}
       </main>
-      <Toaster position="top-center" />
     </div>
   );
 };
