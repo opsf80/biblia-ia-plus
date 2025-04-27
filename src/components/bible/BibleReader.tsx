@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Select, 
   SelectContent, 
@@ -12,50 +12,121 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-
-// Sample Bible content (in a real app this would be fetched from an API)
-const SAMPLE_JOHN_1 = {
-  book: "João",
-  chapter: 1,
-  verses: [
-    "No princípio era o Verbo, e o Verbo estava com Deus, e o Verbo era Deus.",
-    "Ele estava no princípio com Deus.",
-    "Todas as coisas foram feitas por ele, e sem ele nada do que foi feito se fez.",
-    "Nele estava a vida, e a vida era a luz dos homens.",
-    "E a luz resplandece nas trevas, e as trevas não a compreenderam.",
-    "Houve um homem enviado de Deus, cujo nome era João.",
-    "Este veio para testemunho, para que testificasse da luz, para que todos cressem por ele.",
-    "Não era ele a luz, mas para que testificasse da luz.",
-    "Ali estava a luz verdadeira, que ilumina a todo o homem que vem ao mundo.",
-    "Estava no mundo, e o mundo foi feito por ele, e o mundo não o conheceu."
-  ],
-  translations: ["ARC", "NVI", "NAA"]
-};
-
-const BIBLE_BOOKS = [
-  "Gênesis", "Êxodo", "Levítico", "Números", "Deuteronômio",
-  "Josué", "Juízes", "Rute", "1 Samuel", "2 Samuel", 
-  "1 Reis", "2 Reis", "1 Crônicas", "2 Crônicas", "Esdras",
-  "Neemias", "Ester", "Jó", "Salmos", "Provérbios",
-  "Eclesiastes", "Cantares", "Isaías", "Jeremias", "Lamentações",
-  "Ezequiel", "Daniel", "Oséias", "Joel", "Amós",
-  "Obadias", "Jonas", "Miquéias", "Naum", "Habacuque",
-  "Sofonias", "Ageu", "Zacarias", "Malaquias",
-  "Mateus", "Marcos", "Lucas", "João", "Atos",
-  "Romanos", "1 Coríntios", "2 Coríntios", "Gálatas", "Efésios",
-  "Filipenses", "Colossenses", "1 Tessalonicenses", "2 Tessalonicenses", "1 Timóteo",
-  "2 Timóteo", "Tito", "Filemom", "Hebreus", "Tiago",
-  "1 Pedro", "2 Pedro", "1 João", "2 João", "3 João",
-  "Judas", "Apocalipse"
-];
+import { supabase } from '@/integrations/supabase/client';
+import { Book, BibleVersion, Verse } from '@/types/bible';
+import { useToast } from '@/hooks/use-toast';
 
 const BibleReader = () => {
-  const [selectedBook, setSelectedBook] = useState("João");
-  const [selectedChapter, setSelectedChapter] = useState(1);
-  const [selectedTranslation, setSelectedTranslation] = useState("ARC");
-  
-  const maxChapters = 21; // For John, would be dynamic in a real app
-  
+  const [books, setBooks] = useState<Book[]>([]);
+  const [versions, setVersions] = useState<BibleVersion[]>([]);
+  const [selectedBook, setSelectedBook] = useState<string>('João');
+  const [selectedChapter, setSelectedChapter] = useState<number>(1);
+  const [selectedTranslation, setSelectedTranslation] = useState<string>('ARC');
+  const [verses, setVerses] = useState<Verse[]>([]);
+  const [maxChapters, setMaxChapters] = useState<number>(1);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchBooks();
+    fetchVersions();
+  }, []);
+
+  useEffect(() => {
+    fetchChapters();
+    fetchVerses();
+  }, [selectedBook, selectedChapter, selectedTranslation]);
+
+  const fetchBooks = async () => {
+    const { data, error } = await supabase
+      .from('livros')
+      .select('*')
+      .order('posicao');
+
+    if (error) {
+      toast({
+        title: "Erro ao carregar livros",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      setBooks(data);
+    }
+  };
+
+  const fetchVersions = async () => {
+    const { data, error } = await supabase
+      .from('versoes_biblia')
+      .select('*');
+
+    if (error) {
+      toast({
+        title: "Erro ao carregar versões",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      setVersions(data);
+    }
+  };
+
+  const fetchChapters = async () => {
+    const { data, error } = await supabase
+      .from('livros')
+      .select('id')
+      .eq('nome', selectedBook)
+      .single();
+
+    if (data) {
+      const { count, error: chapterError } = await supabase
+        .from('capitulos')
+        .select('*', { count: 'exact' })
+        .eq('livro_id', data.id);
+
+      if (chapterError) {
+        toast({
+          title: "Erro ao carregar capítulos",
+          description: chapterError.message,
+          variant: "destructive"
+        });
+      } else {
+        setMaxChapters(count || 1);
+      }
+    }
+  };
+
+  const fetchVerses = async () => {
+    const { data: bookData, error: bookError } = await supabase
+      .from('livros')
+      .select('id')
+      .eq('nome', selectedBook)
+      .single();
+
+    if (bookData) {
+      const { data: versesData, error } = await supabase
+        .from('versiculos')
+        .select(`
+          id, 
+          numero, 
+          texto, 
+          capitulo: capitulos(id, numero, livro_id),
+          versao: versoes_biblia(sigla)
+        `)
+        .eq('capitulo.livro_id', bookData.id)
+        .eq('capitulo.numero', selectedChapter)
+        .eq('versao.sigla', selectedTranslation);
+
+      if (error) {
+        toast({
+          title: "Erro ao carregar versículos",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        setVerses(versesData || []);
+      }
+    }
+  };
+
   const handlePreviousChapter = () => {
     if (selectedChapter > 1) {
       setSelectedChapter(selectedChapter - 1);
@@ -79,14 +150,19 @@ const BibleReader = () => {
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Livros da Bíblia</SelectLabel>
-                {BIBLE_BOOKS.map((book) => (
-                  <SelectItem key={book} value={book}>{book}</SelectItem>
+                {books.map((book) => (
+                  <SelectItem key={book.id} value={book.nome}>
+                    {book.nome}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
           </Select>
           
-          <Select value={selectedChapter.toString()} onValueChange={(value) => setSelectedChapter(parseInt(value))}>
+          <Select 
+            value={selectedChapter.toString()} 
+            onValueChange={(value) => setSelectedChapter(parseInt(value))}
+          >
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Capítulo" />
             </SelectTrigger>
@@ -102,15 +178,20 @@ const BibleReader = () => {
             </SelectContent>
           </Select>
           
-          <Select value={selectedTranslation} onValueChange={setSelectedTranslation}>
+          <Select 
+            value={selectedTranslation} 
+            onValueChange={setSelectedTranslation}
+          >
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Versão" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Versão</SelectLabel>
-                {SAMPLE_JOHN_1.translations.map((translation) => (
-                  <SelectItem key={translation} value={translation}>{translation}</SelectItem>
+                {versions.map((version) => (
+                  <SelectItem key={version.id} value={version.sigla}>
+                    {version.sigla}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
@@ -149,10 +230,10 @@ const BibleReader = () => {
         </CardHeader>
         <CardContent>
           <div className="bible-text space-y-4">
-            {SAMPLE_JOHN_1.verses.map((verse, index) => (
-              <p key={index} className="flex">
-                <span className="verse-number">{index + 1}</span>
-                <span>{verse}</span>
+            {verses.map((verse) => (
+              <p key={verse.id} className="flex">
+                <span className="verse-number mr-2 text-muted-foreground">{verse.numero}</span>
+                <span>{verse.texto}</span>
               </p>
             ))}
           </div>

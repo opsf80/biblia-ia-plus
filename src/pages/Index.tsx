@@ -1,22 +1,29 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import WelcomeCard from '@/components/home/WelcomeCard';
 import FeatureCard from '@/components/home/FeatureCard';
 import DailyVerse from '@/components/home/DailyVerse';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 import { BookOpen, MessageSquare, Star, Users } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 const IndexPage = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   useEffect(() => {
     // Check if user has completed onboarding
     const onboardingComplete = localStorage.getItem('onboardingComplete') === 'true';
     setShowOnboarding(!onboardingComplete);
-  }, []);
+    
+    // Redirect authenticated users to Bible page
+    if (user) {
+      navigate('/bible');
+    }
+  }, [user, navigate]);
 
   if (showOnboarding) {
     return (
@@ -41,19 +48,10 @@ const IndexPage = () => {
           <div className="flex flex-wrap gap-4 justify-center mt-8">
             <Button 
               size="lg"
-              className="bg-gradient-to-r from-biblia-purple-500 to-biblia-blue-500 hover:opacity-90"
-              onClick={() => navigate('/chat')}
-            >
-              <MessageSquare className="mr-2 h-5 w-5" />
-              Perguntar à IA
-            </Button>
-            <Button 
-              size="lg"
               variant="outline"
-              onClick={() => navigate('/bible')}
+              onClick={() => navigate('/auth')}
             >
-              <BookOpen className="mr-2 h-5 w-5" />
-              Ler a Bíblia
+              Entrar
             </Button>
           </div>
         </section>
@@ -94,12 +92,10 @@ const IndexPage = () => {
                   Explore o significado deste versículo poderoso sobre como Deus trabalha todas as coisas para o bem daqueles que o amam.
                 </p>
                 <Button
-                  onClick={() => {
-                    navigate('/chat');
-                    // In a real app, we would prefill the chat with this question
-                  }}
+                  variant="outline"
+                  onClick={() => navigate('/auth')}
                 >
-                  Responder com IA
+                  Faça login para responder
                 </Button>
               </div>
             </div>

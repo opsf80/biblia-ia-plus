@@ -19,8 +19,16 @@ export default function AuthForm() {
     setIsLoading(true);
 
     try {
-      const { error } = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
+      const { data, error } = isSignUp 
+        ? await supabase.auth.signUp({ 
+            email, 
+            password,
+            options: {
+              data: {
+                username: email.split('@')[0]
+              }
+            }
+          })
         : await supabase.auth.signInWithPassword({ email, password });
 
       if (error) throw error;
