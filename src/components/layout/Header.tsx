@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
@@ -8,14 +8,38 @@ import {
   Sun, 
   Menu,
   Search, 
-  User
+  User,
+  LogOut
 } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import ThemeToggle from './ThemeToggle';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Logout realizado",
+        description: "Até logo!"
+      });
+      navigate('/');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
@@ -67,14 +91,23 @@ const Header = () => {
             <span className="sr-only">Buscar</span>
           </Button>
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-biblia-purple-100 text-biblia-purple-700">
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-            <span className="sr-only">Perfil</span>
-          </Button>
+          {user ? (
+            <>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-biblia-purple-100 text-biblia-purple-700">
+                    {user.email?.[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Sair</span>
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => navigate('/auth')}>Entrar</Button>
+          )}
         </div>
       </div>
 

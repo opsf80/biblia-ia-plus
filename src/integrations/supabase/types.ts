@@ -9,7 +9,143 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      capitulos: {
+        Row: {
+          id: number
+          livro_id: number | null
+          numero: number
+        }
+        Insert: {
+          id?: number
+          livro_id?: number | null
+          numero: number
+        }
+        Update: {
+          id?: number
+          livro_id?: number | null
+          numero?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capitulos_livro_id_fkey"
+            columns: ["livro_id"]
+            isOneToOne: false
+            referencedRelation: "livros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      livros: {
+        Row: {
+          abreviacao: string
+          id: number
+          nome: string
+          posicao: number
+          testamento: string
+        }
+        Insert: {
+          abreviacao: string
+          id?: number
+          nome: string
+          posicao: number
+          testamento: string
+        }
+        Update: {
+          abreviacao?: string
+          id?: number
+          nome?: string
+          posicao?: number
+          testamento?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      versiculos: {
+        Row: {
+          capitulo_id: number | null
+          id: number
+          numero: number
+          texto: string
+          versao_id: number | null
+        }
+        Insert: {
+          capitulo_id?: number | null
+          id?: number
+          numero: number
+          texto: string
+          versao_id?: number | null
+        }
+        Update: {
+          capitulo_id?: number | null
+          id?: number
+          numero?: number
+          texto?: string
+          versao_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "versiculos_capitulo_id_fkey"
+            columns: ["capitulo_id"]
+            isOneToOne: false
+            referencedRelation: "capitulos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "versiculos_versao_id_fkey"
+            columns: ["versao_id"]
+            isOneToOne: false
+            referencedRelation: "versoes_biblia"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      versoes_biblia: {
+        Row: {
+          descricao: string | null
+          id: number
+          idioma: string
+          nome: string
+          sigla: string
+        }
+        Insert: {
+          descricao?: string | null
+          id?: number
+          idioma: string
+          nome: string
+          sigla: string
+        }
+        Update: {
+          descricao?: string | null
+          id?: number
+          idioma?: string
+          nome?: string
+          sigla?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
