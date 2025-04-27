@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,31 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom colors
+				biblia: {
+					purple: {
+						100: "#EBE3FF",
+						200: "#D2C2FF",
+						300: "#B39DFF",
+						400: "#9879FF",
+						500: "#6B46C1", // primary purple
+						600: "#553C9A",
+						700: "#44337A",
+						800: "#322659",
+						900: "#1A1637"
+					},
+					blue: {
+						100: "#EBF8FF",
+						200: "#BEE3F8",
+						300: "#90CDF4",
+						400: "#4299E1", // light blue
+						500: "#3182CE", // primary blue
+						600: "#2B6CB0",
+						700: "#2C5282",
+						800: "#1A365D",
+						900: "#0F2942"
+					},
 				}
 			},
 			borderRadius: {
@@ -84,11 +110,25 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				fadeIn: {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				slideIn: {
+					'0%': { transform: 'translateY(20px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				fadeIn: 'fadeIn 0.5s ease-out forwards',
+				slideIn: 'slideIn 0.5s ease-out forwards'
+			},
+			fontFamily: {
+				serif: ['Georgia', 'Cambria', 'Times New Roman', 'Times', 'serif'],
+				sans: ['Inter', 'system-ui', 'sans-serif']
 			}
 		}
 	},
