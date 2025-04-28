@@ -26,10 +26,9 @@ interface Post {
   comments_count: number;
   likes_count: number;
   created_at: string;
-  profiles: {
-    username: string | null;
-    avatar_url: string | null;
-  };
+  user_id: string;
+  user_name?: string;
+  user_avatar?: string | null;
 }
 
 const CommunityPage = () => {
@@ -44,6 +43,7 @@ const CommunityPage = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        // Modificando a consulta para lidar com o related data differently
         const { data, error } = await supabase
           .from('community_posts')
           .select(`
@@ -54,10 +54,7 @@ const CommunityPage = () => {
             comments_count,
             likes_count,
             created_at,
-            profiles:user_id (
-              username,
-              avatar_url
-            )
+            user_id
           `)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -66,7 +63,34 @@ const CommunityPage = () => {
           throw error;
         }
 
-        setPosts(data || []);
+        // Buscar informações de perfil para cada post
+        const postsWithProfiles = await Promise.all(
+          (data || []).map(async (post) => {
+            // Buscar perfil do usuário separadamente
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', post.user_id)
+              .single();
+
+            if (profileError) {
+              console.warn(`Error fetching profile for user ${post.user_id}:`, profileError.message);
+              return {
+                ...post,
+                user_name: 'Usuário',
+                user_avatar: null
+              };
+            }
+
+            return {
+              ...post,
+              user_name: profileData?.username || 'Usuário',
+              user_avatar: profileData?.avatar_url
+            };
+          })
+        );
+
+        setPosts(postsWithProfiles);
       } catch (error: any) {
         console.error('Erro ao buscar postagens:', error.message);
         toast({
@@ -170,10 +194,10 @@ const CommunityPage = () => {
                     <CardDescription className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs bg-biblia-blue-100 text-biblia-blue-700">
-                          {post.profiles?.username ? post.profiles.username.substring(0, 2).toUpperCase() : "UN"}
+                          {post.user_name ? post.user_name.substring(0, 2).toUpperCase() : "UN"}
                         </AvatarFallback>
                       </Avatar>
-                      <span>{post.profiles?.username || "Usuário"}</span>
+                      <span>{post.user_name || "Usuário"}</span>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
