@@ -1,92 +1,212 @@
 
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MessageSquare, ThumbsUp, User } from 'lucide-react';
+import { MessageSquare, ThumbsUp, User, PlusCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import CommunitySearch from '@/components/community/CommunitySearch';
 
-const discussions = [
-  {
-    id: 1,
-    title: "Como interpretar Apocalipse 20?",
-    author: "João Silva",
-    date: "Hoje",
-    comments: 12,
-    likes: 8,
-    category: "Estudo Bíblico",
-    excerpt: "Gostaria de entender melhor o significado do milênio mencionado em Apocalipse 20 e as diferentes interpretações teológicas."
-  },
-  {
-    id: 2,
-    title: "Testemunho: Como Deus mudou minha vida",
-    author: "Maria Santos",
-    date: "Ontem",
-    comments: 24,
-    likes: 45,
-    category: "Testemunhos",
-    excerpt: "Quero compartilhar como encontrei Cristo em um momento difícil e como minha vida foi completamente transformada."
-  },
-  {
-    id: 3,
-    title: "Pergunte ao Pastor: Dízimos e Ofertas",
-    author: "Pr. Roberto",
-    date: "2 dias atrás",
-    comments: 32,
-    likes: 17,
-    category: "Pergunte ao Pastor",
-    excerpt: "Neste vídeo, respondo às principais dúvidas sobre o que a Bíblia realmente ensina sobre dízimos e ofertas."
-  }
-];
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  comments_count: number;
+  likes_count: number;
+  created_at: string;
+  profiles: {
+    username: string | null;
+    avatar_url: string | null;
+  };
+}
 
 const CommunityPage = () => {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Buscar postagens do Supabase
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_posts')
+          .select(`
+            id,
+            title,
+            content,
+            category,
+            comments_count,
+            likes_count,
+            created_at,
+            profiles:user_id (
+              username,
+              avatar_url
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error) {
+          throw error;
+        }
+
+        setPosts(data || []);
+      } catch (error: any) {
+        console.error('Erro ao buscar postagens:', error.message);
+        toast({
+          title: "Erro ao carregar postagens",
+          description: "Houve um problema ao buscar as postagens da comunidade.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_categories')
+          .select('*')
+          .order('name');
+
+        if (error) {
+          throw error;
+        }
+
+        setCategories(data || []);
+      } catch (error: any) {
+        console.error('Erro ao buscar categorias:', error.message);
+      }
+    };
+
+    fetchPosts();
+    fetchCategories();
+  }, [toast]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return "Hoje";
+    } else if (diffDays === 1) {
+      return "Ontem";
+    } else if (diffDays < 7) {
+      return `${diffDays} dias atrás`;
+    } else {
+      return date.toLocaleDateString('pt-BR');
+    }
+  };
+
+  const handleNewPostClick = () => {
+    if (!user) {
+      toast({
+        title: "Login Necessário",
+        description: "Você precisa estar logado para criar uma nova discussão.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    // Em um cenário real, navegaria para a página de criação de post
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A criação de postagens estará disponível em breve."
+    });
+  };
+
   return (
     <Layout>
       <div className="container py-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Comunidade</h1>
-          <Button>Nova Discussão</Button>
+          <div className="flex items-center gap-4">
+            <CommunitySearch />
+            <Button onClick={handleNewPostClick}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nova Discussão
+            </Button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
           <div className="lg:col-span-5 space-y-6">
             <h2 className="text-xl font-semibold">Discussões Recentes</h2>
             
-            {discussions.map((discussion) => (
-              <Card key={discussion.id}>
+            {loading ? (
+              <div className="flex justify-center p-12">
+                <p>Carregando discussões...</p>
+              </div>
+            ) : posts.length > 0 ? (
+              posts.map((post) => (
+                <Card key={post.id}>
+                  <CardHeader>
+                    <div className="flex justify-between">
+                      <Badge className="mb-2">{post.category}</Badge>
+                      <span className="text-sm text-muted-foreground">{formatDate(post.created_at)}</span>
+                    </div>
+                    <CardTitle>{post.title}</CardTitle>
+                    <CardDescription className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-xs bg-biblia-blue-100 text-biblia-blue-700">
+                          {post.profiles?.username ? post.profiles.username.substring(0, 2).toUpperCase() : "UN"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{post.profiles?.username || "Usuário"}</span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}</p>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <div className="flex space-x-4">
+                      <span className="flex items-center text-sm text-muted-foreground">
+                        <ThumbsUp className="mr-1 h-4 w-4" />
+                        {post.likes_count}
+                      </span>
+                      <span className="flex items-center text-sm text-muted-foreground">
+                        <MessageSquare className="mr-1 h-4 w-4" />
+                        {post.comments_count}
+                      </span>
+                    </div>
+                    <Button variant="outline" onClick={() => navigate(`/community/post/${post.id}`)}>Ver Discussão</Button>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <Card>
                 <CardHeader>
-                  <div className="flex justify-between">
-                    <Badge className="mb-2">{discussion.category}</Badge>
-                    <span className="text-sm text-muted-foreground">{discussion.date}</span>
-                  </div>
-                  <CardTitle>{discussion.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-biblia-blue-100 text-biblia-blue-700">
-                        {discussion.author.substring(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{discussion.author}</span>
-                  </CardDescription>
+                  <CardTitle>Nenhuma discussão encontrada</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>{discussion.excerpt}</p>
+                  <p>Seja o primeiro a iniciar uma discussão na comunidade!</p>
                 </CardContent>
-                <CardFooter className="flex justify-between">
-                  <div className="flex space-x-4">
-                    <span className="flex items-center text-sm text-muted-foreground">
-                      <ThumbsUp className="mr-1 h-4 w-4" />
-                      {discussion.likes}
-                    </span>
-                    <span className="flex items-center text-sm text-muted-foreground">
-                      <MessageSquare className="mr-1 h-4 w-4" />
-                      {discussion.comments}
-                    </span>
-                  </div>
-                  <Button variant="outline">Ver Discussão</Button>
+                <CardFooter>
+                  <Button onClick={handleNewPostClick}>Criar Nova Discussão</Button>
                 </CardFooter>
               </Card>
-            ))}
+            )}
           </div>
           
           <div className="lg:col-span-2 space-y-6">
@@ -95,22 +215,15 @@ const CommunityPage = () => {
                 <CardTitle>Canais Populares</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Estudo Bíblico</span>
-                  <Badge>124 posts</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Testemunhos</span>
-                  <Badge>87 posts</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Pergunte ao Pastor</span>
-                  <Badge>56 posts</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Quiz Bíblico</span>
-                  <Badge>43 posts</Badge>
-                </div>
+                {categories.map((category) => (
+                  <div key={category.id} className="flex items-center justify-between">
+                    <span className="font-medium">{category.name}</span>
+                    <Badge>0 posts</Badge>
+                  </div>
+                ))}
+                {categories.length === 0 && (
+                  <p className="text-muted-foreground">Nenhuma categoria disponível</p>
+                )}
               </CardContent>
               <CardFooter>
                 <Button variant="outline" className="w-full">Ver Todos os Canais</Button>

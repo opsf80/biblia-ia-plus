@@ -36,8 +36,9 @@ export default function AuthForm() {
       if (isSignUp) {
         toast({
           title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar o cadastro."
+          description: "Redirecionando para escolha de plano..."
         });
+        navigate('/plans/premium');
       } else {
         toast({
           title: "Login realizado com sucesso!",
