@@ -20,7 +20,7 @@ export interface Book {
   nome: string;
   abreviacao: string;
   posicao: number;
-  testamento: 'Antigo' | 'Novo';
+  testamento: string; // Alterado de 'Antigo' | 'Novo' para string para aceitar o valor do Supabase
 }
 
 export interface Chapter {
@@ -31,8 +31,16 @@ export interface Chapter {
 
 export interface Verse {
   id: number;
-  capitulo_id: number;
   numero: number;
   texto: string;
-  versao_id: number;
+  capitulo?: {
+    id: number;
+    numero: number;
+    livro_id: number;
+  };
+  versao?: {
+    sigla: string;
+  };
+  capitulo_id?: number;
+  versao_id?: number;
 }

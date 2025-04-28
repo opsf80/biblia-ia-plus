@@ -49,7 +49,8 @@ const BibleReader = () => {
         variant: "destructive"
       });
     } else {
-      setBooks(data);
+      // Convertemos explicitamente os dados para o tipo Book[]
+      setBooks(data as Book[]);
     }
   };
 
@@ -65,7 +66,7 @@ const BibleReader = () => {
         variant: "destructive"
       });
     } else {
-      setVersions(data);
+      setVersions(data as BibleVersion[]);
     }
   };
 
@@ -122,7 +123,8 @@ const BibleReader = () => {
           variant: "destructive"
         });
       } else {
-        setVerses(versesData || []);
+        // Convertemos explicitamente os dados para o tipo Verse[]
+        setVerses(versesData as unknown as Verse[]);
       }
     }
   };
