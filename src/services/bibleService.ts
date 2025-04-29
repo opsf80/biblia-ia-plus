@@ -51,7 +51,7 @@ export const bibleService = {
   getVersions: async (): Promise<BibleVersion[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/versions'
+        body: { endpoint: '/versions' }
       });
       
       if (error) throw error;
@@ -77,8 +77,10 @@ export const bibleService = {
   getBooks: async (bibleId: string): Promise<BibleBook[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/books',
-        query: { bibleId }
+        body: { 
+          endpoint: '/books',
+          params: { bibleId }
+        }
       });
       
       if (error) throw error;
@@ -100,8 +102,10 @@ export const bibleService = {
   getChapters: async (bibleId: string, bookId: string): Promise<BibleChapter[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/chapters',
-        query: { bibleId, bookId }
+        body: { 
+          endpoint: '/chapters',
+          params: { bibleId, bookId }
+        }
       });
       
       if (error) throw error;
@@ -121,8 +125,10 @@ export const bibleService = {
   getVerses: async (bibleId: string, chapterId: string): Promise<BibleVerse[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/verses',
-        query: { bibleId, chapterId }
+        body: { 
+          endpoint: '/verses',
+          params: { bibleId, chapterId }
+        }
       });
       
       if (error) throw error;
@@ -142,8 +148,10 @@ export const bibleService = {
   getVerse: async (bibleId: string, verseId: string): Promise<BibleVerse | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/verse',
-        query: { bibleId, verseId }
+        body: { 
+          endpoint: '/verse',
+          params: { bibleId, verseId }
+        }
       });
       
       if (error) throw error;
@@ -176,8 +184,10 @@ export const bibleService = {
       }
 
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/search',
-        query: { bibleId, query, limit }
+        body: { 
+          endpoint: '/search',
+          params: { bibleId, query, limit }
+        }
       });
       
       if (error) throw error;
@@ -205,8 +215,10 @@ export const bibleService = {
   getPassage: async (bibleId: string, passageId: string): Promise<BibleVerse | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('bible-api', {
-        path: '/passage',
-        query: { bibleId, passageId }
+        body: { 
+          endpoint: '/passage',
+          params: { bibleId, passageId }
+        }
       });
       
       if (error) throw error;

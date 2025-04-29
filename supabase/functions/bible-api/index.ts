@@ -5,12 +5,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const API_KEY = Deno.env.get("SCRIPTURE_API_BIBLE_KEY") || "";
 const BASE_URL = "https://api.scripture.api.bible/v1";
 
-// Versões disponíveis em português
-const BIBLE_VERSIONS = {
-  BLFPT: "d63894c8d9a7a503-01", // Bíblia Livre Para Todos
-  TFT: "90799bb5b996fddc-01"    // Translation for Translators
-};
-
 // Headers CORS para permitir requisições do frontend
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,9 +18,25 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const endpoint = url.pathname.replace('/bible-api', '');
-    const params = Object.fromEntries(url.searchParams);
+    // Extrair os parâmetros do corpo da requisição
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Invalid request body" }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { endpoint, params } = body;
+    
+    if (!endpoint) {
+      return new Response(JSON.stringify({ error: "Missing endpoint parameter" }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // Tratando diferentes endpoints
     let apiUrl = "";
@@ -40,7 +50,7 @@ serve(async (req) => {
         
       case "/books":
         // Listar livros de uma versão específica
-        if (!params.bibleId) {
+        if (!params?.bibleId) {
           return new Response(JSON.stringify({ error: "Parâmetro bibleId é obrigatório" }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -51,7 +61,7 @@ serve(async (req) => {
         
       case "/chapters":
         // Listar capítulos de um livro específico
-        if (!params.bibleId || !params.bookId) {
+        if (!params?.bibleId || !params?.bookId) {
           return new Response(JSON.stringify({ error: "Parâmetros bibleId e bookId são obrigatórios" }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -62,7 +72,7 @@ serve(async (req) => {
         
       case "/verses":
         // Buscar versículos de um capítulo específico
-        if (!params.bibleId || !params.chapterId) {
+        if (!params?.bibleId || !params?.chapterId) {
           return new Response(JSON.stringify({ error: "Parâmetros bibleId e chapterId são obrigatórios" }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -73,7 +83,7 @@ serve(async (req) => {
         
       case "/verse":
         // Buscar um versículo específico
-        if (!params.bibleId || !params.verseId) {
+        if (!params?.bibleId || !params?.verseId) {
           return new Response(JSON.stringify({ error: "Parâmetros bibleId e verseId são obrigatórios" }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -84,7 +94,7 @@ serve(async (req) => {
         
       case "/search":
         // Buscar versículos por palavras-chave
-        if (!params.bibleId || !params.query) {
+        if (!params?.bibleId || !params?.query) {
           return new Response(JSON.stringify({ error: "Parâmetros bibleId e query são obrigatórios" }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -98,7 +108,7 @@ serve(async (req) => {
         
       case "/passage":
         // Buscar uma passagem específica
-        if (!params.bibleId || !params.passageId) {
+        if (!params?.bibleId || !params?.passageId) {
           return new Response(JSON.stringify({ error: "Parâmetros bibleId e passageId são obrigatórios" }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -137,9 +147,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    // Salvando busca no histórico se for uma busca de versículos
-    // Isso seria implementado pelo cliente
 
     // Retornando os dados da API
     return new Response(JSON.stringify(data), {
