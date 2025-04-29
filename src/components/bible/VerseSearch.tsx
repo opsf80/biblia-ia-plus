@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, BookOpen, Search, Heart } from 'lucide-react';
 import { toast } from "sonner";
-import { bibleService, BibleVerse, BIBLE_VERSIONS } from "@/services/bibleService";
+import { bibleService, BibleVerse, BIBLE_VERSIONS } from "@/services/bible";
 import { useAuth } from "@/hooks/use-auth";
 
 interface VerseSearchProps {

@@ -3,7 +3,7 @@ import React from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerseSearch from '@/components/bible/VerseSearch';
-import { bibleService, BibleVerse } from '@/services/bibleService'; 
+import { bibleService, BibleVerse } from '@/services/bible'; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';

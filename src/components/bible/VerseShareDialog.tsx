@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Dialog,
@@ -11,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 import VerseSearch from "./VerseSearch";
-import { BibleVerse } from "@/services/bibleService";
+import { BibleVerse } from "@/services/bible";
 
 interface VerseShareDialogProps {
   onInsertVerse: (text: string) => void;
