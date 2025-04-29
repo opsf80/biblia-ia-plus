@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Select, 
@@ -12,118 +13,119 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Book, BibleVersion, Verse } from '@/types/bible';
 import { useToast } from '@/hooks/use-toast';
+import { bibleService, BIBLE_VERSIONS } from '@/services/bible';
+import { BibleBook, BibleChapter, BibleVerse } from '@/services/bible/types';
 
 const BibleReader = () => {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [versions, setVersions] = useState<BibleVersion[]>([]);
+  const [books, setBooks] = useState<BibleBook[]>([]);
   const [selectedBook, setSelectedBook] = useState<string>('João');
+  const [selectedBookId, setSelectedBookId] = useState<string>('');
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
-  const [selectedTranslation, setSelectedTranslation] = useState<string>('ARC');
-  const [verses, setVerses] = useState<Verse[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<string>(BIBLE_VERSIONS.BLFPT.id);
+  const [verses, setVerses] = useState<BibleVerse[]>([]);
+  const [chapters, setChapters] = useState<BibleChapter[]>([]);
   const [maxChapters, setMaxChapters] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchBooks();
-    fetchVersions();
   }, []);
 
   useEffect(() => {
-    fetchChapters();
-    fetchVerses();
-  }, [selectedBook, selectedChapter, selectedTranslation]);
+    if (books.length > 0) {
+      const foundBook = books.find(book => book.name === selectedBook);
+      if (foundBook) {
+        setSelectedBookId(foundBook.id);
+      }
+    }
+  }, [selectedBook, books]);
+
+  useEffect(() => {
+    if (selectedBookId) {
+      fetchChapters();
+    }
+  }, [selectedBookId, selectedVersion]);
+
+  useEffect(() => {
+    if (selectedBookId && chapters.length > 0) {
+      fetchVerses();
+    }
+  }, [selectedBookId, selectedChapter, selectedVersion, chapters]);
 
   const fetchBooks = async () => {
-    const { data, error } = await supabase
-      .from('livros')
-      .select('*')
-      .order('posicao');
-
-    if (error) {
+    setIsLoading(true);
+    try {
+      const booksData = await bibleService.getBooks(selectedVersion);
+      setBooks(booksData);
+      
+      if (booksData.length > 0) {
+        // Find John or default to first book
+        const johnBook = booksData.find(book => book.name === 'João' || book.name === 'John');
+        if (johnBook) {
+          setSelectedBook(johnBook.name);
+          setSelectedBookId(johnBook.id);
+        } else {
+          setSelectedBook(booksData[0].name);
+          setSelectedBookId(booksData[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching books:', error);
       toast({
         title: "Erro ao carregar livros",
-        description: error.message,
+        description: "Não foi possível carregar a lista de livros.",
         variant: "destructive"
       });
-    } else {
-      setBooks(data as Book[]);
-    }
-  };
-
-  const fetchVersions = async () => {
-    const { data, error } = await supabase
-      .from('versoes_biblia')
-      .select('*');
-
-    if (error) {
-      toast({
-        title: "Erro ao carregar versões",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      setVersions(data as BibleVersion[]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchChapters = async () => {
-    const { data, error } = await supabase
-      .from('livros')
-      .select('id')
-      .eq('nome', selectedBook)
-      .single();
-
-    if (data) {
-      const { count, error: chapterError } = await supabase
-        .from('capitulos')
-        .select('*', { count: 'exact' })
-        .eq('livro_id', data.id);
-
-      if (chapterError) {
-        toast({
-          title: "Erro ao carregar capítulos",
-          description: chapterError.message,
-          variant: "destructive"
-        });
-      } else {
-        setMaxChapters(count || 1);
-      }
+    setIsLoading(true);
+    try {
+      const chaptersData = await bibleService.getChapters(selectedVersion, selectedBookId);
+      setChapters(chaptersData);
+      setMaxChapters(chaptersData.length);
+      
+      // Reset to chapter 1 when changing books
+      setSelectedChapter(1);
+    } catch (error) {
+      console.error('Error fetching chapters:', error);
+      toast({
+        title: "Erro ao carregar capítulos",
+        description: "Não foi possível carregar os capítulos deste livro.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchVerses = async () => {
-    const { data: bookData, error: bookError } = await supabase
-      .from('livros')
-      .select('id')
-      .eq('nome', selectedBook)
-      .single();
-
-    if (bookData) {
-      const { data: versesData, error } = await supabase
-        .from('versiculos')
-        .select(`
-          id, 
-          numero, 
-          texto, 
-          capitulo: capitulos(id, numero, livro_id),
-          versao: versoes_biblia(sigla)
-        `)
-        .eq('capitulo.livro_id', bookData.id)
-        .eq('capitulo.numero', selectedChapter)
-        .eq('versao.sigla', selectedTranslation);
-
-      if (error) {
-        toast({
-          title: "Erro ao carregar versículos",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        setVerses(versesData as unknown as Verse[]);
+    setIsLoading(true);
+    try {
+      if (chapters.length === 0) return;
+      
+      const chapterId = chapters.find(ch => Number(ch.number) === selectedChapter)?.id;
+      if (!chapterId) {
+        console.error('Chapter ID not found for', selectedChapter);
+        return;
       }
+      
+      const versesData = await bibleService.getVerses(selectedVersion, chapterId);
+      setVerses(versesData);
+    } catch (error) {
+      console.error('Error fetching verses:', error);
+      toast({
+        title: "Erro ao carregar versículos",
+        description: "Não foi possível carregar os versículos deste capítulo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -138,6 +140,11 @@ const BibleReader = () => {
       setSelectedChapter(selectedChapter + 1);
     }
   };
+
+  const getVersionName = () => {
+    const version = Object.values(BIBLE_VERSIONS).find(v => v.id === selectedVersion);
+    return version?.abbreviation || '';
+  };
   
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -151,8 +158,8 @@ const BibleReader = () => {
               <SelectGroup>
                 <SelectLabel>Livros da Bíblia</SelectLabel>
                 {books.map((book) => (
-                  <SelectItem key={book.id} value={book.nome}>
-                    {book.nome}
+                  <SelectItem key={book.id} value={book.name}>
+                    {book.name}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -179,8 +186,8 @@ const BibleReader = () => {
           </Select>
           
           <Select 
-            value={selectedTranslation} 
-            onValueChange={setSelectedTranslation}
+            value={selectedVersion} 
+            onValueChange={setSelectedVersion}
           >
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Versão" />
@@ -188,9 +195,9 @@ const BibleReader = () => {
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Versão</SelectLabel>
-                {versions.map((version) => (
-                  <SelectItem key={version.id} value={version.sigla}>
-                    {version.sigla}
+                {Object.values(BIBLE_VERSIONS).map((version) => (
+                  <SelectItem key={version.id} value={version.id}>
+                    {version.abbreviation}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -231,18 +238,32 @@ const BibleReader = () => {
           <CardTitle className="flex items-baseline">
             <span className="text-2xl font-bold">{selectedBook}</span>
             <span className="chapter-number ml-2">{selectedChapter}</span>
-            <span className="ml-auto text-sm text-muted-foreground">{selectedTranslation}</span>
+            <span className="ml-auto text-sm text-muted-foreground">{getVersionName()}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bible-text space-y-4">
-            {verses.map((verse) => (
-              <p key={verse.id} className="flex">
-                <span className="verse-number mr-2 text-muted-foreground">{verse.numero}</span>
-                <span>{verse.texto}</span>
-              </p>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <div className="animate-pulse text-center">
+                <p>Carregando...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bible-text space-y-4">
+              {verses.length > 0 ? (
+                verses.map((verse) => (
+                  <p key={verse.id} className="flex">
+                    <span className="verse-number mr-2 text-muted-foreground">{verse.reference.split(':')[1]}</span>
+                    <span>{verse.content}</span>
+                  </p>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  Não foram encontrados versículos para este capítulo.
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
