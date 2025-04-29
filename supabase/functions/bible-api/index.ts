@@ -1,0 +1,156 @@
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// Configurações da API
+const API_KEY = Deno.env.get("SCRIPTURE_API_BIBLE_KEY") || "";
+const BASE_URL = "https://api.scripture.api.bible/v1";
+
+// Versões disponíveis em português
+const BIBLE_VERSIONS = {
+  BLFPT: "d63894c8d9a7a503-01", // Bíblia Livre Para Todos
+  TFT: "90799bb5b996fddc-01"    // Translation for Translators
+};
+
+// Headers CORS para permitir requisições do frontend
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  // Tratando requisições OPTIONS (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const endpoint = url.pathname.replace('/bible-api', '');
+    const params = Object.fromEntries(url.searchParams);
+
+    // Tratando diferentes endpoints
+    let apiUrl = "";
+    let queryParams = "";
+
+    switch (endpoint) {
+      case "/versions":
+        // Listar versões disponíveis
+        apiUrl = `${BASE_URL}/bibles`;
+        break;
+        
+      case "/books":
+        // Listar livros de uma versão específica
+        if (!params.bibleId) {
+          return new Response(JSON.stringify({ error: "Parâmetro bibleId é obrigatório" }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/books`;
+        break;
+        
+      case "/chapters":
+        // Listar capítulos de um livro específico
+        if (!params.bibleId || !params.bookId) {
+          return new Response(JSON.stringify({ error: "Parâmetros bibleId e bookId são obrigatórios" }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/books/${params.bookId}/chapters`;
+        break;
+        
+      case "/verses":
+        // Buscar versículos de um capítulo específico
+        if (!params.bibleId || !params.chapterId) {
+          return new Response(JSON.stringify({ error: "Parâmetros bibleId e chapterId são obrigatórios" }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/chapters/${params.chapterId}/verses`;
+        break;
+        
+      case "/verse":
+        // Buscar um versículo específico
+        if (!params.bibleId || !params.verseId) {
+          return new Response(JSON.stringify({ error: "Parâmetros bibleId e verseId são obrigatórios" }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/verses/${params.verseId}`;
+        break;
+        
+      case "/search":
+        // Buscar versículos por palavras-chave
+        if (!params.bibleId || !params.query) {
+          return new Response(JSON.stringify({ error: "Parâmetros bibleId e query são obrigatórios" }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/search`;
+        queryParams = `?query=${encodeURIComponent(params.query)}`;
+        if (params.limit) queryParams += `&limit=${params.limit}`;
+        if (params.offset) queryParams += `&offset=${params.offset}`;
+        break;
+        
+      case "/passage":
+        // Buscar uma passagem específica
+        if (!params.bibleId || !params.passageId) {
+          return new Response(JSON.stringify({ error: "Parâmetros bibleId e passageId são obrigatórios" }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/passages/${encodeURIComponent(params.passageId)}`;
+        break;
+        
+      default:
+        return new Response(JSON.stringify({ error: "Endpoint não suportado" }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+
+    // Fazendo a requisição para a API da Bible
+    console.log(`Requisitando: ${apiUrl}${queryParams}`);
+    
+    const response = await fetch(`${apiUrl}${queryParams}`, {
+      method: "GET",
+      headers: {
+        "api-key": API_KEY,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Erro na API:", data);
+      return new Response(JSON.stringify({ 
+        error: "Erro ao acessar a API da Bíblia",
+        details: data
+      }), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Salvando busca no histórico se for uma busca de versículos
+    // Isso seria implementado pelo cliente
+
+    // Retornando os dados da API
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error("Erro na Edge Function:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});

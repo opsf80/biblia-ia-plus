@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Select, 
@@ -11,7 +10,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Book, BibleVersion, Verse } from '@/types/bible';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +49,6 @@ const BibleReader = () => {
         variant: "destructive"
       });
     } else {
-      // Convertemos explicitamente os dados para o tipo Book[]
       setBooks(data as Book[]);
     }
   };
@@ -123,7 +122,6 @@ const BibleReader = () => {
           variant: "destructive"
         });
       } else {
-        // Convertemos explicitamente os dados para o tipo Verse[]
         setVerses(versesData as unknown as Verse[]);
       }
     }
@@ -199,24 +197,30 @@ const BibleReader = () => {
             </SelectContent>
           </Select>
           
-          <div className="flex gap-1 ml-auto">
-            <Button 
-              variant="outline" 
-              size="icon" 
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="icon"
               onClick={handlePreviousChapter}
               disabled={selectedChapter <= 1}
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="sr-only">Capítulo anterior</span>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
               onClick={handleNextChapter}
               disabled={selectedChapter >= maxChapters}
             >
               <ChevronRight className="h-4 w-4" />
               <span className="sr-only">Próximo capítulo</span>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/bible/search">
+                <Search className="h-4 w-4 mr-2" />
+                <span>Pesquisar</span>
+              </Link>
             </Button>
           </div>
         </div>

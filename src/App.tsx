@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Chat from "./pages/Chat";
 import Bible from "./pages/Bible";
+import BibleSearch from "./pages/BibleSearch";
 import Plans from "./pages/Plans";
 import Community from "./pages/Community";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/bible" element={<Bible />} />
+            <Route path="/bible/search" element={<BibleSearch />} />
             <Route path="/plans" element={<Plans />} />
             <Route path="/plans/premium" element={<PremiumPlans />} />
             <Route path="/community" element={<Community />} />

@@ -130,6 +130,39 @@ export type Database = {
         }
         Relationships: []
       }
+      favorite_verses: {
+        Row: {
+          book: string
+          chapter: number
+          created_at: string | null
+          id: string
+          text: string
+          user_id: string | null
+          verse: number
+          version: string
+        }
+        Insert: {
+          book: string
+          chapter: number
+          created_at?: string | null
+          id?: string
+          text: string
+          user_id?: string | null
+          verse: number
+          version: string
+        }
+        Update: {
+          book?: string
+          chapter?: number
+          created_at?: string | null
+          id?: string
+          text?: string
+          user_id?: string | null
+          verse?: number
+          version?: string
+        }
+        Relationships: []
+      }
       livros: {
         Row: {
           abreviacao: string
@@ -208,6 +241,30 @@ export type Database = {
           start_date?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      verse_searches: {
+        Row: {
+          created_at: string | null
+          id: string
+          query: string
+          user_id: string | null
+          version: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          query: string
+          user_id?: string | null
+          version: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          query?: string
+          user_id?: string | null
+          version?: string
         }
         Relationships: []
       }
