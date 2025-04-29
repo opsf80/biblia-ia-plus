@@ -31,26 +31,59 @@ const AI_RESPONSES = [
   }
 ];
 
-// Function to generate a simple response
-const generateResponse = (question: string): Promise<string> => {
-  return new Promise((resolve) => {
-    // Simplified response logic for demo
+// N8n webhook URL
+const N8N_WEBHOOK_URL = 'https://n8n-n8n.taalus.easypanel.host/webhook-test/4f63aa06-2cac-4413-9f94-b50cd9b76fba';
+
+// Function to generate a response via n8n webhook
+const generateResponse = async (question: string): Promise<string> => {
+  try {
+    // Send request to n8n webhook
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        question,
+        timestamp: new Date().toISOString()
+      }),
+    });
+    
+    // Check if the request was successful
+    if (!response.ok) {
+      throw new Error(`N8n webhook returned ${response.status}`);
+    }
+    
+    // Try to get JSON response from n8n
+    try {
+      const data = await response.json();
+      if (data && data.answer) {
+        return data.answer;
+      }
+    } catch (jsonError) {
+      // If n8n doesn't return JSON or doesn't have an answer property,
+      // fall back to our sample responses
+      console.log('Falling back to sample responses:', jsonError);
+    }
+    
+    // Fallback to sample responses if n8n doesn't return expected format
     const lowerQuestion = question.toLowerCase();
     
     // Check for specific questions
     if (lowerQuestion.includes("pecado original")) {
-      resolve(AI_RESPONSES[0].answer);
+      return AI_RESPONSES[0].answer;
     } else if (lowerQuestion.includes("me surpreenda") || lowerQuestion.includes("surpreender")) {
-      resolve(AI_RESPONSES[1].answer);
+      return AI_RESPONSES[1].answer;
     } else if (lowerQuestion.includes("só versículos") || lowerQuestion.includes("apenas versículos")) {
-      resolve(AI_RESPONSES[2].answer);
+      return AI_RESPONSES[2].answer;
     } else {
       // Generic response for other questions
-      setTimeout(() => {
-        resolve("Baseado nas Escrituras, posso dizer que esta é uma pergunta importante para reflexão. A Bíblia nos convida a buscar sabedoria através da oração e do estudo da Palavra.\n\nTalvez possamos explorar isso mais profundamente. Você gostaria de especificar alguma passagem bíblica para discutirmos?");
-      }, 1000);
+      return "Baseado nas Escrituras, posso dizer que esta é uma pergunta importante para reflexão. A Bíblia nos convida a buscar sabedoria através da oração e do estudo da Palavra.\n\nTalvez possamos explorar isso mais profundamente. Você gostaria de especificar alguma passagem bíblica para discutirmos?";
     }
-  });
+  } catch (error) {
+    console.error('Error sending to n8n webhook:', error);
+    throw error;
+  }
 };
 
 const ChatBox = () => {
