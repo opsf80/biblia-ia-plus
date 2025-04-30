@@ -37,6 +37,8 @@ const N8N_WEBHOOK_URL = 'https://n8n-n8n.taalus.easypanel.host/webhook-test/4f63
 // Function to generate a response via n8n webhook
 const generateResponse = async (question: string): Promise<string> => {
   try {
+    console.log('Sending to webhook:', question);
+    
     // Send request to n8n webhook
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
@@ -49,24 +51,61 @@ const generateResponse = async (question: string): Promise<string> => {
       }),
     });
     
+    // Log the raw response for debugging
+    console.log('Webhook response status:', response.status);
+    
     // Check if the request was successful
     if (!response.ok) {
       throw new Error(`N8n webhook returned ${response.status}`);
     }
     
-    // Try to get JSON response from n8n
+    // Get the response text first to log it
+    const responseText = await response.text();
+    console.log('Webhook raw response:', responseText);
+    
+    // Try to parse as JSON if possible
     try {
-      const data = await response.json();
-      if (data && data.answer) {
-        return data.answer;
+      if (responseText && responseText.trim()) {
+        const data = JSON.parse(responseText);
+        console.log('Parsed webhook response:', data);
+        
+        // If we have an answer property, return it
+        if (data && data.answer) {
+          return data.answer;
+        }
+        
+        // If we received data but no answer property, check for other possible properties
+        if (data && typeof data === 'object') {
+          if (data.response) return data.response;
+          if (data.message) return data.message;
+          if (data.result) return data.result;
+          if (data.output) return data.output;
+          
+          // If there's a property that looks like a string, return it
+          for (const key in data) {
+            if (typeof data[key] === 'string' && data[key].length > 10) {
+              return data[key];
+            }
+          }
+          
+          // Return the whole JSON as string if nothing else worked
+          return JSON.stringify(data);
+        }
+      }
+      
+      // If we couldn't parse as JSON or find a suitable property, return the raw text
+      if (responseText && responseText.trim()) {
+        return responseText;
       }
     } catch (jsonError) {
-      // If n8n doesn't return JSON or doesn't have an answer property,
-      // fall back to our sample responses
-      console.log('Falling back to sample responses:', jsonError);
+      console.log('Error parsing JSON response:', jsonError);
+      // If we couldn't parse as JSON, return the raw text
+      if (responseText && responseText.trim()) {
+        return responseText;
+      }
     }
     
-    // Fallback to sample responses if n8n doesn't return expected format
+    // Fall back to sample responses if all else fails
     const lowerQuestion = question.toLowerCase();
     
     // Check for specific questions
