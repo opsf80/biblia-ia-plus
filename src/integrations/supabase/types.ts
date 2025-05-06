@@ -187,6 +187,36 @@ export type Database = {
         }
         Relationships: []
       }
+      highlighted_verses: {
+        Row: {
+          color: string
+          content: string
+          created_at: string
+          id: number
+          reference: string
+          user_id: string | null
+          verse_id: string
+        }
+        Insert: {
+          color: string
+          content: string
+          created_at?: string
+          id?: number
+          reference: string
+          user_id?: string | null
+          verse_id: string
+        }
+        Update: {
+          color?: string
+          content?: string
+          created_at?: string
+          id?: number
+          reference?: string
+          user_id?: string | null
+          verse_id?: string
+        }
+        Relationships: []
+      }
       livros: {
         Row: {
           abreviacao: string

@@ -126,7 +126,7 @@ export const contentService = {
   // Highlight a verse with a specific color
   highlightVerse: async (verseId: string, reference: string, content: string, color: HighlightColor): Promise<boolean> => {
     try {
-      // Use insert method without specifying a table
+      // Now that the highlighted_verses table exists, we can safely insert into it
       const { error } = await supabase
         .from('highlighted_verses')
         .insert({

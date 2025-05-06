@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, BookOpen, Share, BookmarkPlus, BookmarkCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { contentService, SIMPLE_TRANSLATIONS } from '@/services/bible';
+import { contentService, favoritesService, SIMPLE_TRANSLATIONS } from '@/services/bible';
 import { useAuth } from '@/hooks/use-auth';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -69,7 +70,7 @@ const SimpleVerseSearch: React.FC<SimpleVerseSearchProps> = ({ onVerseSelect }) 
     
     if (verseResult) {
       try {
-        const success = await contentService.saveFavoriteVerse({
+        const success = await favoritesService.saveFavoriteVerse({
           id: `simple-${Date.now()}`,
           reference: verseResult.reference,
           content: verseResult.text
