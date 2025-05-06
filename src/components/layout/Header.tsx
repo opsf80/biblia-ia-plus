@@ -1,89 +1,79 @@
-
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import ThemeToggle from './ThemeToggle';
 import { Menu, User, LogOut, Book, Users, Star, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    const {
+      error
+    } = await supabase.auth.signOut();
     if (error) {
       toast({
         title: 'Erro ao sair',
         description: error.message,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } else {
       toast({
-        title: 'Logout realizado com sucesso',
+        title: 'Logout realizado com sucesso'
       });
       navigate('/');
     }
   };
-
-  const menuItems = [
-    { name: 'Bíblia', path: '/bible', icon: <Book className="h-5 w-5 md:mr-2" /> },
-    { name: 'Chat', path: '/chat', icon: <MessageSquare className="h-5 w-5 md:mr-2" /> },
-    { name: 'Planos', path: '/plans', icon: <Star className="h-5 w-5 md:mr-2" /> },
-    { name: 'Comunidade', path: '/community', icon: <Users className="h-5 w-5 md:mr-2" /> },
-  ];
-
-  return (
-    <header className="bg-white dark:bg-gray-900 border-b">
+  const menuItems = [{
+    name: 'Bíblia',
+    path: '/bible',
+    icon: <Book className="h-5 w-5 md:mr-2" />
+  }, {
+    name: 'Chat',
+    path: '/chat',
+    icon: <MessageSquare className="h-5 w-5 md:mr-2" />
+  }, {
+    name: 'Planos',
+    path: '/plans',
+    icon: <Star className="h-5 w-5 md:mr-2" />
+  }, {
+    name: 'Comunidade',
+    path: '/community',
+    icon: <Users className="h-5 w-5 md:mr-2" />
+  }];
+  return <header className="bg-white dark:bg-gray-900 border-b">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="https://meliexplore.com.br/cdn/xplor_blue-white.png" 
-              alt="BíbliaIA+" 
-              className="h-8"
-            />
+            <img src="https://meliexplore.com.br/cdn/xplor_blue-white.png" alt="BíbliaIA+" className="h-8" />
           </Link>
           
           <nav className="hidden md:flex items-center gap-1">
-            {menuItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => 
-                  `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive 
-                      ? 'bg-biblia-blue-50 text-biblia-blue-700 dark:bg-biblia-blue-900/20 dark:text-biblia-blue-300' 
-                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                  }`
-                }
-              >
+            {menuItems.map(item => <NavLink key={item.path} to={item.path} className={({
+            isActive
+          }) => `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-biblia-blue-50 text-biblia-blue-700 dark:bg-biblia-blue-900/20 dark:text-biblia-blue-300' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}>
                 <div className="flex items-center">
                   {item.icon}
-                  <span>{item.name}</span>
+                  <span className="Mentor B\xEDblico IA">{item.name}</span>
                 </div>
-              </NavLink>
-            ))}
+              </NavLink>)}
           </nav>
         </div>
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
           
-          {user ? (
-            <DropdownMenu>
+          {user ? <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9">
@@ -118,19 +108,11 @@ const Header = () => {
                   <span>Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button asChild variant="default">
+            </DropdownMenu> : <Button asChild variant="default">
               <Link to="/auth">Entrar</Link>
-            </Button>
-          )}
+            </Button>}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <Menu className="h-6 w-6" />
             <span className="sr-only">Toggle menu</span>
           </Button>
@@ -138,31 +120,16 @@ const Header = () => {
       </div>
 
       {/* Menu móvel */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t px-4 py-3 shadow-lg">
+      {isMobileMenuOpen && <div className="md:hidden border-t px-4 py-3 shadow-lg">
           <nav className="flex flex-col gap-2">
-            {menuItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => 
-                  `flex items-center gap-3 px-4 py-3 rounded-md ${
-                    isActive 
-                      ? 'bg-biblia-blue-50 text-biblia-blue-700 dark:bg-biblia-blue-900/20 dark:text-biblia-blue-300' 
-                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                  }`
-                }
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
+            {menuItems.map(item => <NavLink key={item.path} to={item.path} className={({
+          isActive
+        }) => `flex items-center gap-3 px-4 py-3 rounded-md ${isActive ? 'bg-biblia-blue-50 text-biblia-blue-700 dark:bg-biblia-blue-900/20 dark:text-biblia-blue-300' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`} onClick={() => setIsMobileMenuOpen(false)}>
                 {item.icon}
                 <span>{item.name}</span>
-              </NavLink>
-            ))}
+              </NavLink>)}
           </nav>
-        </div>
-      )}
-    </header>
-  );
+        </div>}
+    </header>;
 };
-
 export default Header;
