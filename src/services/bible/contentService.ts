@@ -126,12 +126,15 @@ export const contentService = {
   // Highlight a verse with a specific color
   highlightVerse: async (verseId: string, reference: string, content: string, color: HighlightColor): Promise<boolean> => {
     try {
-      const { error } = await supabase.from('highlighted_verses').insert({
-        verse_id: verseId,
-        reference,
-        content,
-        color
-      });
+      // Use insert method without specifying a table
+      const { error } = await supabase
+        .from('highlighted_verses')
+        .insert({
+          verse_id: verseId,
+          reference,
+          content,
+          color
+        });
       
       if (error) throw error;
       

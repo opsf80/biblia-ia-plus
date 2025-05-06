@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { HighlightColor } from '@/services/bible/types';
-import { useState as useHookState } from '@hookform/resolvers/zod';
 
 interface SimpleVerseSearchProps {
   onVerseSelect?: (verse: any) => void;

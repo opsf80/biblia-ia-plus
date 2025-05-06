@@ -46,6 +46,7 @@ export interface HighlightedVerse {
   content: string;
   color: HighlightColor;
   created_at: string;
+  user_id?: string;
 }
 
 // Available Bible versions
