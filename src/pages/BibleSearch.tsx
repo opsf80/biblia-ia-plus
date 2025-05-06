@@ -3,6 +3,8 @@ import React from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerseSearch from '@/components/bible/VerseSearch';
+import SimpleVerseSearch from '@/components/bible/SimpleVerseSearch';
+import HighlightedVerses from '@/components/bible/HighlightedVerses';
 import { bibleService, BibleVerse } from '@/services/bible'; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/hooks/use-auth';
@@ -65,19 +67,43 @@ const BibleSearchPage = () => {
       <div className="container py-4">
         <h1 className="text-2xl font-bold mb-6">Busca Bíblica</h1>
         
-        <Tabs defaultValue="search">
+        <Tabs defaultValue="simple-search">
           <TabsList className="mb-6">
-            <TabsTrigger value="search">Pesquisar Versículos</TabsTrigger>
-            <TabsTrigger value="favorites">Meus Favoritos</TabsTrigger>
+            <TabsTrigger value="simple-search">Busca Rápida</TabsTrigger>
+            <TabsTrigger value="advanced-search">Busca Avançada</TabsTrigger>
+            <TabsTrigger value="highlights">Destaques</TabsTrigger>
+            <TabsTrigger value="favorites">Favoritos</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="search" className="space-y-4">
+          <TabsContent value="simple-search" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Pesquisa de Versículos</CardTitle>
+                <CardTitle>Busca Rápida por Versículo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SimpleVerseSearch />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="advanced-search" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Busca Avançada</CardTitle>
               </CardHeader>
               <CardContent>
                 <VerseSearch />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="highlights">
+            <Card>
+              <CardHeader>
+                <CardTitle>Versículos Destacados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <HighlightedVerses />
               </CardContent>
             </Card>
           </TabsContent>

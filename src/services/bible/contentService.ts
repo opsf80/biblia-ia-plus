@@ -1,6 +1,7 @@
 
-import { BibleBook, BibleChapter, BibleVerse } from './types';
+import { BibleBook, BibleChapter, BibleVerse, HighlightColor } from './types';
 import { callBibleApi } from './apiClient';
+import { supabase } from '@/integrations/supabase/client';
 
 export const contentService = {
   // Get all books for a specific Bible version
@@ -104,6 +105,74 @@ export const contentService = {
     } catch (error) {
       console.error('Error fetching passage:', error);
       return null;
+    }
+  },
+
+  // Get a verse using the simple bible-api.com
+  getSimpleVerse: async (reference: string, translation: string = 'almeida'): Promise<any> => {
+    try {
+      const data = await callBibleApi('/simple-verse', { 
+        reference, 
+        translation 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching simple verse:', error);
+      throw error;
+    }
+  },
+
+  // Highlight a verse with a specific color
+  highlightVerse: async (verseId: string, reference: string, content: string, color: HighlightColor): Promise<boolean> => {
+    try {
+      const { error } = await supabase.from('highlighted_verses').insert({
+        verse_id: verseId,
+        reference,
+        content,
+        color
+      });
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error highlighting verse:', error);
+      return false;
+    }
+  },
+
+  // Get highlighted verses
+  getHighlightedVerses: async (): Promise<any[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('highlighted_verses')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching highlighted verses:', error);
+      return [];
+    }
+  },
+
+  // Delete a highlighted verse
+  deleteHighlightedVerse: async (id: number): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('highlighted_verses')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting highlighted verse:', error);
+      return false;
     }
   }
 };

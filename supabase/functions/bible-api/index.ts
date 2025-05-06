@@ -1,15 +1,18 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// Configurações da API
-const API_KEY = Deno.env.get("SCRIPTURE_API_BIBLE_KEY") || "";
-const BASE_URL = "https://api.scripture.api.bible/v1";
-
 // Headers CORS para permitir requisições do frontend
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// API da Bíblia
+const SCRIPTURE_API_KEY = Deno.env.get("SCRIPTURE_API_BIBLE_KEY") || "";
+const SCRIPTURE_API_URL = "https://api.scripture.api.bible/v1";
+
+// Nova API da Bíblia (bible-api.com)
+const BIBLE_API_URL = "https://bible-api.com";
 
 serve(async (req) => {
   // Tratando requisições OPTIONS (CORS preflight)
@@ -38,7 +41,63 @@ serve(async (req) => {
       });
     }
 
-    // Tratando diferentes endpoints
+    // Tratando o novo endpoint para a bible-api.com
+    if (endpoint === '/simple-verse') {
+      if (!params?.reference) {
+        return new Response(JSON.stringify({ error: "Parâmetro reference é obrigatório" }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const translation = params.translation || 'almeida';
+      const reference = encodeURIComponent(params.reference);
+      
+      // Construir URL para a bible-api.com
+      const url = `${BIBLE_API_URL}/${reference}?translation=${translation}`;
+      
+      console.log(`Requisitando bible-api.com: ${url}`);
+      
+      try {
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            return new Response(JSON.stringify({ 
+              error: "Versículo não encontrado", 
+              details: "A referência bíblica informada não foi encontrada"
+            }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          
+          return new Response(JSON.stringify({ 
+            error: "Erro ao acessar a API da Bíblia",
+            details: `Status: ${response.status}`
+          }), {
+            status: response.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        const data = await response.json();
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error("Erro ao acessar bible-api.com:", error);
+        return new Response(JSON.stringify({ 
+          error: "Erro ao acessar a API da Bíblia",
+          details: error.message
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Tratando diferentes endpoints da API original
     let apiUrl = "";
     let queryParams = "";
     let includeContent = false;
@@ -46,7 +105,7 @@ serve(async (req) => {
     switch (endpoint) {
       case "/versions":
         // Listar versões disponíveis
-        apiUrl = `${BASE_URL}/bibles`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles`;
         break;
         
       case "/books":
@@ -57,7 +116,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/books`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/books`;
         break;
         
       case "/chapters":
@@ -68,7 +127,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/books/${params.bookId}/chapters`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/books/${params.bookId}/chapters`;
         break;
         
       case "/verses":
@@ -79,7 +138,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/chapters/${params.chapterId}/verses`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/chapters/${params.chapterId}/verses`;
         includeContent = true;
         break;
         
@@ -91,7 +150,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/verses/${params.verseId}`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/verses/${params.verseId}`;
         includeContent = true;
         break;
         
@@ -103,7 +162,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/search`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/search`;
         queryParams = `?query=${encodeURIComponent(params.query)}`;
         if (params.limit) queryParams += `&limit=${params.limit}`;
         if (params.offset) queryParams += `&offset=${params.offset}`;
@@ -117,7 +176,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        apiUrl = `${BASE_URL}/bibles/${params.bibleId}/passages/${encodeURIComponent(params.passageId)}`;
+        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/passages/${encodeURIComponent(params.passageId)}`;
         includeContent = true;
         break;
         
@@ -139,7 +198,7 @@ serve(async (req) => {
     const response = await fetch(`${apiUrl}${queryParams}`, {
       method: "GET",
       headers: {
-        "api-key": API_KEY,
+        "api-key": SCRIPTURE_API_KEY,
         "Content-Type": "application/json"
       }
     });
