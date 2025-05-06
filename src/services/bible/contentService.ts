@@ -126,15 +126,17 @@ export const contentService = {
   // Highlight a verse with a specific color
   highlightVerse: async (verseId: string, reference: string, content: string, color: HighlightColor): Promise<boolean> => {
     try {
-      // Now that the highlighted_verses table exists, we can safely insert into it
-      const { error } = await supabase
-        .from('highlighted_verses')
+      // Use explicit type casting to bypass TypeScript's limitations
+      // since the table exists but TypeScript doesn't know about it yet
+      const { error } = await (supabase
+        .from('highlighted_verses' as any)
         .insert({
           verse_id: verseId,
           reference,
           content,
-          color
-        });
+          color,
+          user_id: supabase.auth.getUser() ? (await supabase.auth.getUser()).data.user?.id : null
+        } as any));
       
       if (error) throw error;
       
@@ -148,10 +150,11 @@ export const contentService = {
   // Get highlighted verses
   getHighlightedVerses: async (): Promise<any[]> => {
     try {
-      const { data, error } = await supabase
-        .from('highlighted_verses')
+      // Use explicit type casting to bypass TypeScript's limitations
+      const { data, error } = await (supabase
+        .from('highlighted_verses' as any)
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }));
       
       if (error) throw error;
       
@@ -165,10 +168,11 @@ export const contentService = {
   // Delete a highlighted verse
   deleteHighlightedVerse: async (id: number): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('highlighted_verses')
+      // Use explicit type casting to bypass TypeScript's limitations
+      const { error } = await (supabase
+        .from('highlighted_verses' as any)
         .delete()
-        .eq('id', id);
+        .eq('id', id));
       
       if (error) throw error;
       
