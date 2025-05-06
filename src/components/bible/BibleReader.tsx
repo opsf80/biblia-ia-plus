@@ -116,6 +116,10 @@ const BibleReader = () => {
       }
       
       const versesData = await bibleService.getVerses(selectedVersion, chapterId);
+      
+      // Log the data to check what's being returned
+      console.log('Verses data:', versesData);
+      
       setVerses(versesData);
     } catch (error) {
       console.error('Error fetching verses:', error);
@@ -253,7 +257,9 @@ const BibleReader = () => {
               {verses.length > 0 ? (
                 verses.map((verse) => (
                   <p key={verse.id} className="flex">
-                    <span className="verse-number mr-2 text-muted-foreground">{verse.reference.split(':')[1]}</span>
+                    <span className="verse-number mr-2 text-muted-foreground">
+                      {verse.reference ? verse.reference.split(':')[1] : ''}
+                    </span>
                     <span>{verse.content}</span>
                   </p>
                 ))

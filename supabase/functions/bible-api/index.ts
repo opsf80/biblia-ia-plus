@@ -41,6 +41,7 @@ serve(async (req) => {
     // Tratando diferentes endpoints
     let apiUrl = "";
     let queryParams = "";
+    let includeContent = false;
 
     switch (endpoint) {
       case "/versions":
@@ -79,6 +80,7 @@ serve(async (req) => {
           });
         }
         apiUrl = `${BASE_URL}/bibles/${params.bibleId}/chapters/${params.chapterId}/verses`;
+        includeContent = true;
         break;
         
       case "/verse":
@@ -90,6 +92,7 @@ serve(async (req) => {
           });
         }
         apiUrl = `${BASE_URL}/bibles/${params.bibleId}/verses/${params.verseId}`;
+        includeContent = true;
         break;
         
       case "/search":
@@ -115,6 +118,7 @@ serve(async (req) => {
           });
         }
         apiUrl = `${BASE_URL}/bibles/${params.bibleId}/passages/${encodeURIComponent(params.passageId)}`;
+        includeContent = true;
         break;
         
       default:
@@ -122,6 +126,11 @@ serve(async (req) => {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
+    }
+
+    // Para endpoints que precisam de conteúdo, adicione o parâmetro includeContent
+    if (includeContent && !queryParams.includes('includeContent')) {
+      queryParams = queryParams ? `${queryParams}&include-content=true` : `?include-content=true`;
     }
 
     // Fazendo a requisição para a API da Bible

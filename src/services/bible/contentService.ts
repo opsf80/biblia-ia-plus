@@ -42,11 +42,33 @@ export const contentService = {
     try {
       const data = await callBibleApi('/verses', { bibleId, chapterId });
       
-      return data.data.map((verse: any) => ({
+      // First fetch verse IDs
+      const verseIds = data.data.map((verse: any) => ({
         id: verse.id,
-        reference: verse.reference,
-        content: verse.content
+        reference: verse.reference
       }));
+      
+      // Then fetch each verse content separately
+      const versesWithContent: BibleVerse[] = [];
+      
+      for (const verseData of verseIds) {
+        try {
+          const verseDetails = await callBibleApi('/verse', { 
+            bibleId, 
+            verseId: verseData.id 
+          });
+          
+          versesWithContent.push({
+            id: verseData.id,
+            reference: verseData.reference,
+            content: verseDetails.data.content
+          });
+        } catch (error) {
+          console.error(`Error fetching verse content for ${verseData.id}:`, error);
+        }
+      }
+      
+      return versesWithContent;
     } catch (error) {
       console.error('Error fetching verses:', error);
       return [];
