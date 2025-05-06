@@ -39,7 +39,7 @@ const Header = () => {
     path: '/bible',
     icon: <Book className="h-5 w-5 md:mr-2" />
   }, {
-    name: 'Chat',
+    name: 'Mentor Bíblico IA',
     path: '/chat',
     icon: <MessageSquare className="h-5 w-5 md:mr-2" />
   }, {
