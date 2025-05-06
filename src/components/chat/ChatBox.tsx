@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,7 +22,7 @@ const AI_RESPONSES = [
   },
   {
     question: "me surpreenda",
-    answer: "**Você sabia?** 🌟\n\nJesus mencionou o profeta Jonas como um sinal profético de Sua própria morte e ressurreição. Em Mateus 12:39-40, Jesus disse: \"Uma geração má e adúltera pede um sinal miraculoso! Mas nenhum sinal lhe será dado, exceto o sinal do profeta Jonas. Pois assim como Jonas esteve três dias e três noites no ventre de um grande peixe, assim o Filho do homem ficará três dias e três noites no coração da terra.\"\n\nEsta fascinante conexão entre o Antigo e o Novo Testamento mostra como a história de Jonas serviu como uma prefiguração profética da morte, sepultamento e ressurreição de Jesus!"
+    answer: "**Você sabia?** 🌟\n\nJesus mencionou o profeta Jonas como um sinal profético de Sua própria morte e ressurreição. Em Mateus 12:39-40, Jesus disse: \"Uma geração má e adúltera pede um sinal miraculoso! Mas nenhum sinal lhe será dado, exceto o sinal do profeta Jonas. Pois assim como Jonas esteve três dias e três noites no ventre de um grande peixe, assim o Filho do homem ficará três dias e três noites no coração da terra.\"\n\nEsta fascinante conexão entre o Antigo e o Novo Testamento mostra como a história de Jonas serviu como uma prefigura profética da morte, sepultamento e ressurreição de Jesus!"
   },
   {
     question: "só versículos sobre amor",
@@ -31,8 +30,8 @@ const AI_RESPONSES = [
   }
 ];
 
-// N8n webhook URL
-const N8N_WEBHOOK_URL = 'https://n8n-n8n.taalus.easypanel.host/webhook-test/4f63aa06-2cac-4413-9f94-b50cd9b76fba';
+// N8n webhook URL - Updated
+const N8N_WEBHOOK_URL = 'https://n8n-n8n.taalus.easypanel.host/webhook/4f63aa06-2cac-4413-9f94-b50cd9b76fba';
 
 // Function to generate a response via n8n webhook
 const generateResponse = async (question: string): Promise<string> => {
