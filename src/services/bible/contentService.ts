@@ -1,12 +1,30 @@
 
 import { BibleBook, BibleChapter, BibleVerse, HighlightColor } from './types';
-import { callBibleApi } from './apiClient';
+import { callBibleApi, callBibleMySql } from './apiClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export const contentService = {
   // Get all books for a specific Bible version
   getBooks: async (bibleId: string): Promise<BibleBook[]> => {
     try {
+      // Tente primeiro obter do MySQL
+      try {
+        const response = await callBibleMySql('getBooks', { versionId: bibleId });
+        
+        if (response && response.length > 0) {
+          return response.map((book: any) => ({
+            id: book.id,
+            name: book.name,
+            nameLong: book.name,
+            abbreviation: book.abbreviation || '',
+            testament: book.testament || ''
+          }));
+        }
+      } catch (mysqlError) {
+        console.log('Erro ao obter do MySQL, usando API:', mysqlError);
+      }
+      
+      // Se falhar ou não retornar dados, use a API
       const data = await callBibleApi('/books', { bibleId });
       
       return data.data.map((book: any) => ({
@@ -25,6 +43,22 @@ export const contentService = {
   // Get chapters for a specific book
   getChapters: async (bibleId: string, bookId: string): Promise<BibleChapter[]> => {
     try {
+      // Tente primeiro obter do MySQL
+      try {
+        const response = await callBibleMySql('getChapters', { bookId });
+        
+        if (response && response.length > 0) {
+          return response.map((chapter: any) => ({
+            id: chapter.id,
+            number: chapter.number.toString(),
+            bookId: bookId
+          }));
+        }
+      } catch (mysqlError) {
+        console.log('Erro ao obter capítulos do MySQL, usando API:', mysqlError);
+      }
+      
+      // Se falhar ou não retornar dados, use a API
       const data = await callBibleApi('/chapters', { bibleId, bookId });
       
       return data.data.map((chapter: any) => ({
@@ -41,6 +75,23 @@ export const contentService = {
   // Get verses for a specific chapter
   getVerses: async (bibleId: string, chapterId: string): Promise<BibleVerse[]> => {
     try {
+      // Tente primeiro obter do MySQL
+      try {
+        const response = await callBibleMySql('getVerses', { chapterId });
+        
+        if (response && response.length > 0) {
+          return response.map((verse: any) => ({
+            id: verse.id,
+            reference: verse.reference || '',
+            content: verse.text,
+            number: verse.number
+          }));
+        }
+      } catch (mysqlError) {
+        console.log('Erro ao obter versículos do MySQL, usando API:', mysqlError);
+      }
+      
+      // Se falhar, use a API
       const data = await callBibleApi('/verses', { bibleId, chapterId });
       
       // First fetch verse IDs

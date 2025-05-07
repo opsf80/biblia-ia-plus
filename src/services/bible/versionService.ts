@@ -1,11 +1,28 @@
 
 import { BibleVersion, BIBLE_VERSIONS } from './types';
-import { callBibleApi } from './apiClient';
+import { callBibleApi, callBibleMySql } from './apiClient';
 
 export const versionService = {
   // Get all available Bible versions
   getVersions: async (): Promise<BibleVersion[]> => {
     try {
+      // Tente primeiro obter do MySQL
+      try {
+        const response = await callBibleMySql('getVersions', {});
+        
+        if (response && response.length > 0) {
+          return response.map((version: any) => ({
+            id: version.id,
+            name: version.name,
+            abbreviation: version.abbreviation,
+            language: version.language
+          }));
+        }
+      } catch (mysqlError) {
+        console.log('Erro ao obter versões do MySQL, usando API:', mysqlError);
+      }
+      
+      // Se falhar, use a API
       const data = await callBibleApi('/versions');
       
       // Filter only versions in Portuguese and English

@@ -15,3 +15,18 @@ export async function callBibleApi(endpoint: string, params?: Record<string, any
     throw error;
   }
 }
+
+// Helper function to call MySQL Bible database via edge function
+export async function callBibleMySql(action: string, params?: Record<string, any>) {
+  try {
+    const { data, error } = await supabase.functions.invoke('bible-mysql', {
+      body: { action, params }
+    });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`Bible MySQL error (${action}):`, error);
+    throw error;
+  }
+}
