@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { bibleService, BIBLE_VERSIONS } from '@/services/bible';
 import { BibleBook, BibleChapter, BibleVerse } from '@/services/bible/types';
+import { supabase } from '@/integrations/supabase/client';
 
 const BibleReader = () => {
   const [books, setBooks] = useState<BibleBook[]>([]);
@@ -27,11 +28,12 @@ const BibleReader = () => {
   const [chapters, setChapters] = useState<BibleChapter[]>([]);
   const [maxChapters, setMaxChapters] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isImporting, setIsImporting] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchBooks();
-  }, []);
+  }, [selectedVersion]);
 
   useEffect(() => {
     if (books.length > 0) {
@@ -57,22 +59,33 @@ const BibleReader = () => {
   const fetchBooks = async () => {
     setIsLoading(true);
     try {
+      // Tentar primeiro do Supabase
       const booksData = await bibleService.getBooks(selectedVersion);
-      setBooks(booksData);
       
-      if (booksData.length > 0) {
-        // Find John or default to first book
-        const johnBook = booksData.find(book => book.name === 'João' || book.name === 'John');
-        if (johnBook) {
-          setSelectedBook(johnBook.name);
-          setSelectedBookId(johnBook.id);
-        } else {
-          setSelectedBook(booksData[0].name);
-          setSelectedBookId(booksData[0].id);
-        }
+      if (booksData.length === 0) {
+        // Se não encontrar no Supabase, importar os livros
+        await importBooks();
+        // Buscar novamente após importação
+        const newBooksData = await bibleService.getBooks(selectedVersion);
+        setBooks(newBooksData);
+      } else {
+        setBooks(booksData);
+      }
+      
+      // Encontrar João ou usar o primeiro livro
+      const johnBook = booksData.find(book => 
+        book.name === 'João' || book.name === 'John' || book.name === 'João'
+      );
+      
+      if (johnBook) {
+        setSelectedBook(johnBook.name);
+        setSelectedBookId(johnBook.id);
+      } else if (booksData.length > 0) {
+        setSelectedBook(booksData[0].name);
+        setSelectedBookId(booksData[0].id);
       }
     } catch (error) {
-      console.error('Error fetching books:', error);
+      console.error('Erro ao buscar livros:', error);
       toast({
         title: "Erro ao carregar livros",
         description: "Não foi possível carregar a lista de livros.",
@@ -83,17 +96,64 @@ const BibleReader = () => {
     }
   };
 
+  const importBooks = async () => {
+    setIsImporting(true);
+    try {
+      toast({
+        title: "Importando livros",
+        description: "Aguarde enquanto importamos os dados da Bíblia..."
+      });
+      
+      const { data, error } = await supabase.functions.invoke('bible-import', {
+        body: { 
+          action: 'import_books',
+          bibleId: selectedVersion
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        toast({
+          title: "Importação concluída",
+          description: data.message
+        });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Erro ao importar livros:', error);
+      toast({
+        title: "Erro na importação",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const fetchChapters = async () => {
     setIsLoading(true);
     try {
       const chaptersData = await bibleService.getChapters(selectedVersion, selectedBookId);
-      setChapters(chaptersData);
-      setMaxChapters(chaptersData.length);
       
-      // Reset to chapter 1 when changing books
+      if (chaptersData.length === 0) {
+        // Se não encontrar no Supabase, importar os capítulos
+        await importChapters();
+        // Buscar novamente após importação
+        const newChaptersData = await bibleService.getChapters(selectedVersion, selectedBookId);
+        setChapters(newChaptersData);
+        setMaxChapters(newChaptersData.length);
+      } else {
+        setChapters(chaptersData);
+        setMaxChapters(chaptersData.length);
+      }
+      
+      // Resetar para o capítulo 1 quando mudar de livro
       setSelectedChapter(1);
     } catch (error) {
-      console.error('Error fetching chapters:', error);
+      console.error('Erro ao buscar capítulos:', error);
       toast({
         title: "Erro ao carregar capítulos",
         description: "Não foi possível carregar os capítulos deste livro.",
@@ -104,6 +164,44 @@ const BibleReader = () => {
     }
   };
 
+  const importChapters = async () => {
+    setIsImporting(true);
+    try {
+      toast({
+        title: "Importando capítulos",
+        description: "Aguarde enquanto importamos os capítulos..."
+      });
+      
+      const { data, error } = await supabase.functions.invoke('bible-import', {
+        body: { 
+          action: 'import_chapters',
+          bibleId: selectedVersion,
+          bookId: selectedBookId
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        toast({
+          title: "Importação concluída",
+          description: data.message
+        });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Erro ao importar capítulos:', error);
+      toast({
+        title: "Erro na importação",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const fetchVerses = async () => {
     setIsLoading(true);
     try {
@@ -111,18 +209,23 @@ const BibleReader = () => {
       
       const chapterId = chapters.find(ch => Number(ch.number) === selectedChapter)?.id;
       if (!chapterId) {
-        console.error('Chapter ID not found for', selectedChapter);
+        console.error('Chapter ID não encontrado para', selectedChapter);
         return;
       }
       
       const versesData = await bibleService.getVerses(selectedVersion, chapterId);
       
-      // Log the data to check what's being returned
-      console.log('Verses data:', versesData);
-      
-      setVerses(versesData);
+      if (versesData.length === 0) {
+        // Se não encontrar no Supabase, importar os versículos
+        await importVerses(chapterId);
+        // Buscar novamente após importação
+        const newVersesData = await bibleService.getVerses(selectedVersion, chapterId);
+        setVerses(newVersesData);
+      } else {
+        setVerses(versesData);
+      }
     } catch (error) {
-      console.error('Error fetching verses:', error);
+      console.error('Erro ao buscar versículos:', error);
       toast({
         title: "Erro ao carregar versículos",
         description: "Não foi possível carregar os versículos deste capítulo.",
@@ -130,6 +233,44 @@ const BibleReader = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const importVerses = async (chapterId: string) => {
+    setIsImporting(true);
+    try {
+      toast({
+        title: "Importando versículos",
+        description: "Aguarde enquanto importamos os versículos..."
+      });
+      
+      const { data, error } = await supabase.functions.invoke('bible-import', {
+        body: { 
+          action: 'import_verses',
+          bibleId: selectedVersion,
+          chapterId
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        toast({
+          title: "Importação concluída",
+          description: data.message
+        });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Erro ao importar versículos:', error);
+      toast({
+        title: "Erro na importação",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -213,7 +354,7 @@ const BibleReader = () => {
               variant="outline"
               size="icon"
               onClick={handlePreviousChapter}
-              disabled={selectedChapter <= 1}
+              disabled={selectedChapter <= 1 || isLoading || isImporting}
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="sr-only">Capítulo anterior</span>
@@ -222,7 +363,7 @@ const BibleReader = () => {
               variant="outline"
               size="icon"
               onClick={handleNextChapter}
-              disabled={selectedChapter >= maxChapters}
+              disabled={selectedChapter >= maxChapters || isLoading || isImporting}
             >
               <ChevronRight className="h-4 w-4" />
               <span className="sr-only">Próximo capítulo</span>
@@ -246,7 +387,7 @@ const BibleReader = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading || isImporting ? (
             <div className="flex justify-center py-10">
               <div className="animate-pulse text-center">
                 <p>Carregando...</p>
@@ -258,9 +399,9 @@ const BibleReader = () => {
                 verses.map((verse) => (
                   <p key={verse.id} className="flex">
                     <span className="verse-number mr-2 text-muted-foreground">
-                      {verse.reference ? verse.reference.split(':')[1] : ''}
+                      {verse.reference ? verse.reference.split(':')[1] : verse.number}
                     </span>
-                    <span>{verse.content}</span>
+                    <span>{verse.content || verse.text}</span>
                   </p>
                 ))
               ) : (

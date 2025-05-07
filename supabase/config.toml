@@ -35,3 +35,7 @@ enabled = true
 
 [functions.bible-api]
 verify_jwt = false
+
+[functions.bible-import]
+verify_jwt = false
+

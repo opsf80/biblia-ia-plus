@@ -1,231 +1,222 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-// Headers CORS para permitir requisições do frontend
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// API da Bíblia
-const SCRIPTURE_API_KEY = Deno.env.get("SCRIPTURE_API_BIBLE_KEY") || "";
-const SCRIPTURE_API_URL = "https://api.scripture.api.bible/v1";
+const apiKey = Deno.env.get('SCRIPTURE_API_BIBLE_KEY');
+const baseUrl = "https://api.scripture.api.bible/v1";
 
-// Nova API da Bíblia (bible-api.com)
-const BIBLE_API_URL = "https://bible-api.com";
+// Cria o cliente Supabase
+const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+async function fetchFromAPI(endpoint: string, params?: any) {
+  let url = `${baseUrl}${endpoint}`;
+  
+  // Adicionar parâmetros de query string se fornecidos
+  if (params) {
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value) queryParams.append(key, value.toString());
+    }
+    if (queryParams.toString()) {
+      url += `?${queryParams.toString()}`;
+    }
+  }
+  
+  console.log(`Buscando: ${url}`);
+  
+  const response = await fetch(url, {
+    headers: { 'api-key': apiKey as string }
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Erro API (${response.status}): ${errorText}`);
+    throw new Error(`Erro na API: ${response.statusText}`);
+  }
+  
+  return await response.json();
+}
+
+async function fetchFromDatabase(endpoint: string, params?: any) {
+  console.log(`Buscando do banco de dados: ${endpoint} com params:`, params);
+  
+  try {
+    // Verificar qual tipo de endpoint estamos processando
+    if (endpoint === '/versions') {
+      const { data, error } = await supabase
+        .from('bible_versions')
+        .select('*');
+      
+      if (error) throw error;
+      
+      return { data };
+    }
+    else if (endpoint === '/books') {
+      const bibleId = params?.bibleId;
+      
+      const { data: versionData, error: versionError } = await supabase
+        .from('bible_versions')
+        .select('id')
+        .eq('version_id', bibleId)
+        .single();
+      
+      if (versionError) throw versionError;
+      
+      const { data, error } = await supabase
+        .from('bible_books')
+        .select('*')
+        .eq('version_id', versionData.id)
+        .order('position');
+      
+      if (error) throw error;
+      
+      return { data };
+    }
+    else if (endpoint === '/chapters') {
+      const bibleId = params?.bibleId;
+      const bookId = params?.bookId;
+      
+      const { data: bookData, error: bookError } = await supabase
+        .from('bible_books')
+        .select('id')
+        .eq('book_id', bookId)
+        .single();
+      
+      if (bookError) throw bookError;
+      
+      const { data, error } = await supabase
+        .from('bible_chapters')
+        .select('*')
+        .eq('book_id', bookData.id)
+        .order('number');
+      
+      if (error) throw error;
+      
+      return { data };
+    }
+    else if (endpoint === '/verses') {
+      const bibleId = params?.bibleId;
+      const chapterId = params?.chapterId;
+      
+      const { data: chapterData, error: chapterError } = await supabase
+        .from('bible_chapters')
+        .select('id')
+        .eq('chapter_id', chapterId)
+        .single();
+      
+      if (chapterError) throw chapterError;
+      
+      const { data, error } = await supabase
+        .from('bible_verses')
+        .select('*')
+        .eq('chapter_id', chapterData.id)
+        .order('number');
+      
+      if (error) throw error;
+      
+      return { data };
+    }
+    else if (endpoint === '/verse') {
+      const bibleId = params?.bibleId;
+      const verseId = params?.verseId;
+      
+      const { data: verseData, error: verseError } = await supabase
+        .from('bible_verses')
+        .select('*')
+        .eq('verse_id', verseId)
+        .single();
+      
+      if (verseError) throw verseError;
+      
+      return { data: verseData };
+    }
+    else if (endpoint === '/passage') {
+      // Para passagens, ainda precisamos usar a API
+      return await fetchFromAPI(`/bibles/${params.bibleId}/passages/${params.passageId}`, {});
+    }
+    else if (endpoint === '/simple-verse') {
+      // Para busca simples via bible-api.com
+      const reference = params?.reference;
+      const translation = params?.translation || 'almeida';
+      
+      const url = `https://bible-api.com/${encodeURIComponent(reference)}?translation=${translation}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar versículo: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    }
+    
+    throw new Error(`Endpoint não implementado: ${endpoint}`);
+  } catch (error) {
+    console.error(`Erro ao buscar do banco de dados: ${error.message}`);
+    throw error;
+  }
+}
 
 serve(async (req) => {
-  // Tratando requisições OPTIONS (CORS preflight)
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
+  
   try {
-    // Extrair os parâmetros do corpo da requisição
-    let body;
+    const { endpoint, params } = await req.json();
+    console.log(`Solicitação recebida para endpoint: ${endpoint}`);
+    
+    let result;
+    
+    // Primeiro tenta buscar do banco de dados
     try {
-      body = await req.json();
-    } catch (e) {
-      return new Response(JSON.stringify({ error: "Invalid request body" }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      result = await fetchFromDatabase(endpoint, params);
+      console.log(`Dados encontrados no banco de dados para ${endpoint}`);
+    } catch (dbError) {
+      console.log(`Não encontrado no banco de dados, tentando API: ${dbError.message}`);
+      
+      // Se não encontrou no banco, busca da API
+      if (!endpoint.startsWith('/simple-verse')) {
+        // Construir o caminho correto da API baseado nos parâmetros
+        let apiPath = '';
+        if (endpoint === '/versions') {
+          apiPath = '/bibles';
+        } else if (endpoint === '/books') {
+          apiPath = `/bibles/${params.bibleId}/books`;
+        } else if (endpoint === '/chapters') {
+          apiPath = `/bibles/${params.bibleId}/books/${params.bookId}/chapters`;
+        } else if (endpoint === '/verses') {
+          apiPath = `/bibles/${params.bibleId}/chapters/${params.chapterId}/verses`;
+        } else if (endpoint === '/verse') {
+          apiPath = `/bibles/${params.bibleId}/verses/${params.verseId}`;
+        } else if (endpoint === '/passage') {
+          apiPath = `/bibles/${params.bibleId}/passages/${params.passageId}`;
+        } else {
+          apiPath = endpoint;
+        }
+        
+        result = await fetchFromAPI(apiPath);
+      } else {
+        // Para o endpoint simple-verse, relanço o erro para ser tratado pelo catch principal
+        throw dbError;
+      }
     }
-
-    const { endpoint, params } = body;
     
-    if (!endpoint) {
-      return new Response(JSON.stringify({ error: "Missing endpoint parameter" }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Tratando o novo endpoint para a bible-api.com
-    if (endpoint === '/simple-verse') {
-      if (!params?.reference) {
-        return new Response(JSON.stringify({ error: "Parâmetro reference é obrigatório" }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      const translation = params.translation || 'almeida';
-      const reference = encodeURIComponent(params.reference);
-      
-      // Construir URL para a bible-api.com
-      const url = `${BIBLE_API_URL}/${reference}?translation=${translation}`;
-      
-      console.log(`Requisitando bible-api.com: ${url}`);
-      
-      try {
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            return new Response(JSON.stringify({ 
-              error: "Versículo não encontrado", 
-              details: "A referência bíblica informada não foi encontrada"
-            }), {
-              status: 404,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-          }
-          
-          return new Response(JSON.stringify({ 
-            error: "Erro ao acessar a API da Bíblia",
-            details: `Status: ${response.status}`
-          }), {
-            status: response.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        
-        const data = await response.json();
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      } catch (error) {
-        console.error("Erro ao acessar bible-api.com:", error);
-        return new Response(JSON.stringify({ 
-          error: "Erro ao acessar a API da Bíblia",
-          details: error.message
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
-
-    // Tratando diferentes endpoints da API original
-    let apiUrl = "";
-    let queryParams = "";
-    let includeContent = false;
-
-    switch (endpoint) {
-      case "/versions":
-        // Listar versões disponíveis
-        apiUrl = `${SCRIPTURE_API_URL}/bibles`;
-        break;
-        
-      case "/books":
-        // Listar livros de uma versão específica
-        if (!params?.bibleId) {
-          return new Response(JSON.stringify({ error: "Parâmetro bibleId é obrigatório" }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/books`;
-        break;
-        
-      case "/chapters":
-        // Listar capítulos de um livro específico
-        if (!params?.bibleId || !params?.bookId) {
-          return new Response(JSON.stringify({ error: "Parâmetros bibleId e bookId são obrigatórios" }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/books/${params.bookId}/chapters`;
-        break;
-        
-      case "/verses":
-        // Buscar versículos de um capítulo específico
-        if (!params?.bibleId || !params?.chapterId) {
-          return new Response(JSON.stringify({ error: "Parâmetros bibleId e chapterId são obrigatórios" }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/chapters/${params.chapterId}/verses`;
-        includeContent = true;
-        break;
-        
-      case "/verse":
-        // Buscar um versículo específico
-        if (!params?.bibleId || !params?.verseId) {
-          return new Response(JSON.stringify({ error: "Parâmetros bibleId e verseId são obrigatórios" }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/verses/${params.verseId}`;
-        includeContent = true;
-        break;
-        
-      case "/search":
-        // Buscar versículos por palavras-chave
-        if (!params?.bibleId || !params?.query) {
-          return new Response(JSON.stringify({ error: "Parâmetros bibleId e query são obrigatórios" }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/search`;
-        queryParams = `?query=${encodeURIComponent(params.query)}`;
-        if (params.limit) queryParams += `&limit=${params.limit}`;
-        if (params.offset) queryParams += `&offset=${params.offset}`;
-        break;
-        
-      case "/passage":
-        // Buscar uma passagem específica
-        if (!params?.bibleId || !params?.passageId) {
-          return new Response(JSON.stringify({ error: "Parâmetros bibleId e passageId são obrigatórios" }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        apiUrl = `${SCRIPTURE_API_URL}/bibles/${params.bibleId}/passages/${encodeURIComponent(params.passageId)}`;
-        includeContent = true;
-        break;
-        
-      default:
-        return new Response(JSON.stringify({ error: "Endpoint não suportado" }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
-
-    // Para endpoints que precisam de conteúdo, adicione o parâmetro includeContent
-    if (includeContent && !queryParams.includes('includeContent')) {
-      queryParams = queryParams ? `${queryParams}&include-content=true` : `?include-content=true`;
-    }
-
-    // Fazendo a requisição para a API da Bible
-    console.log(`Requisitando: ${apiUrl}${queryParams}`);
-    
-    const response = await fetch(`${apiUrl}${queryParams}`, {
-      method: "GET",
-      headers: {
-        "api-key": SCRIPTURE_API_KEY,
-        "Content-Type": "application/json"
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Erro na API:", data);
-      return new Response(JSON.stringify({ 
-        error: "Erro ao acessar a API da Bíblia",
-        details: data
-      }), {
-        status: response.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Retornando os dados da API
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-
   } catch (error) {
-    console.error("Erro na Edge Function:", error);
+    console.error(`Erro geral: ${error.message}`);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
     });
   }
 });

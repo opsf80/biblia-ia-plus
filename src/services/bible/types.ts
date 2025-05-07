@@ -28,7 +28,9 @@ export interface BibleVerse {
   bookId?: string;
   chapterId?: string;
   reference: string;
-  content: string;
+  content?: string;
+  text?: string;
+  number?: number;
 }
 
 export interface SearchResult {
@@ -51,8 +53,12 @@ export interface HighlightedVerse {
 
 // Available Bible versions
 export const BIBLE_VERSIONS = {
-  BLFPT: { id: "d63894c8d9a7a503-01", name: "Bíblia Livre Para Todos", abbreviation: "BLFPT", language: "pt" },
-  TFT: { id: "90799bb5b996fddc-01", name: "Translation for Translators", abbreviation: "TFT", language: "en" }
+  BLFPT: { id: "7142879509583d59-01", name: "Biblia Livre", abbreviation: "BLFPT", language: "pt" },
+  ARC: { id: "de4e12af7f28f599-01", name: "Almeida Revista e Corrigida", abbreviation: "ARC", language: "pt" },
+  NVI: { id: "592420522e16049f-01", name: "Nova Versão Internacional", abbreviation: "NVI", language: "pt" },
+  NVT: { id: "b32b9d1b65124a7b-01", name: "Nova Versão Transformadora", abbreviation: "NVT", language: "pt" },
+  KJV: { id: "9879dbb7cfe39e4d-01", name: "King James Version", abbreviation: "KJV", language: "en" },
+  NIV: { id: "55ec700d9e0d77ea-01", name: "New International Version", abbreviation: "NIV", language: "en" }
 };
 
 // Available Bible translations for simple API
