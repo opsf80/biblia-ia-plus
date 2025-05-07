@@ -3,18 +3,18 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-biblia-blue-900 text-white py-8">
+    <footer className="bg-[#4d66c8] text-white py-8">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <Link to="/">
               <img 
-                src="https://meliexplore.com.br/cdn/xplor_blue-white.png"
+                src="https://cdn.xplor.com.br/biblia.png"
                 alt="BíbliaIA+"
                 className="h-12 mb-4"
               />
             </Link>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-gray-200">
               Seu mentor bíblico pessoal, combinando teologia confiável com inteligência artificial avançada.
             </p>
           </div>
@@ -41,7 +41,7 @@ const Footer = () => {
 
           <div>
             <h3 className="font-bold text-lg mb-4">Assine</h3>
-            <p className="text-sm text-gray-300 mb-4">
+            <p className="text-sm text-gray-200 mb-4">
               Tenha acesso a recursos exclusivos e aprofunde seu conhecimento bíblico.
             </p>
             <Link 
@@ -53,7 +53,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-700 mt-8 pt-6 text-sm text-gray-400 text-center">
+        <div className="border-t border-gray-200/20 mt-8 pt-6 text-sm text-gray-200 text-center">
           &copy; {new Date().getFullYear()} BíbliaIA+ - Todos os direitos reservados.
         </div>
       </div>

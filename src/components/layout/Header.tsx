@@ -55,7 +55,7 @@ const Header = () => {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src="https://meliexplore.com.br/cdn/xplor_blue-white.png" alt="BíbliaIA+" className="h-8" />
+            <img src="https://cdn.xplor.com.br/biblia.png" alt="BíbliaIA+" className="h-8" />
           </Link>
           
           <nav className="hidden md:flex items-center gap-1">
