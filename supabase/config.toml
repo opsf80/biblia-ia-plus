@@ -38,6 +38,3 @@ verify_jwt = false
 
 [functions.bible-import]
 verify_jwt = false
-
-[functions.bible-mysql]
-verify_jwt = false

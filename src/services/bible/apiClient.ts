@@ -16,17 +16,71 @@ export async function callBibleApi(endpoint: string, params?: Record<string, any
   }
 }
 
-// Helper function to call MySQL Bible database via edge function
-export async function callBibleMySql(action: string, params?: Record<string, any>) {
+// Helper function to query Bible data from Supabase database
+export async function queryBibleDatabase(action: string, params?: Record<string, any>) {
+  console.log(`Consultando Supabase: ação ${action} com parâmetros:`, params);
+  
   try {
-    const { data, error } = await supabase.functions.invoke('bible-mysql', {
-      body: { action, params }
-    });
-    
-    if (error) throw error;
-    return data;
+    switch (action) {
+      case 'getVersions':
+        const { data: versions, error: versionsError } = await supabase
+          .from('bible_versions')
+          .select('*')
+          .order('language', { ascending: true })
+          .order('name', { ascending: true });
+        
+        if (versionsError) throw versionsError;
+        return versions;
+        
+      case 'getBooks':
+        const { data: books, error: booksError } = await supabase
+          .from('bible_books')
+          .select('*')
+          .eq('version_id', params?.versionId)
+          .order('position', { ascending: true });
+        
+        if (booksError) throw booksError;
+        return books;
+        
+      case 'getChapters':
+        const { data: chapters, error: chaptersError } = await supabase
+          .from('bible_chapters')
+          .select('*')
+          .eq('book_id', params?.bookId)
+          .order('number', { ascending: true });
+        
+        if (chaptersError) throw chaptersError;
+        return chapters;
+        
+      case 'getVerses':
+        const { data: verses, error: versesError } = await supabase
+          .from('bible_verses')
+          .select('*')
+          .eq('chapter_id', params?.chapterId)
+          .order('number', { ascending: true });
+        
+        if (versesError) throw versesError;
+        return verses;
+        
+      case 'search':
+        const { data: searchResults, error: searchError } = await supabase
+          .from('bible_verses')
+          .select('*')
+          .textSearch('text', params?.query)
+          .eq('version_id', params?.versionId)
+          .limit(params?.limit || 10);
+        
+        if (searchError) throw searchError;
+        return {
+          verses: searchResults,
+          total: searchResults.length
+        };
+        
+      default:
+        throw new Error(`Ação não implementada: ${action}`);
+    }
   } catch (error) {
-    console.error(`Bible MySQL error (${action}):`, error);
+    console.error(`Erro na consulta ao banco de dados: ${action}:`, error);
     throw error;
   }
 }

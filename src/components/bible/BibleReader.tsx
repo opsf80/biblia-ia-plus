@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Select, 
@@ -59,11 +58,11 @@ const BibleReader = () => {
   const fetchBooks = async () => {
     setIsLoading(true);
     try {
-      // Tentar primeiro do Supabase
+      // Buscar livros
       const booksData = await bibleService.getBooks(selectedVersion);
       
       if (booksData.length === 0) {
-        // Se não encontrar no Supabase, importar os livros
+        // Se não encontrar, importar os livros
         await importBooks();
         // Buscar novamente após importação
         const newBooksData = await bibleService.getBooks(selectedVersion);

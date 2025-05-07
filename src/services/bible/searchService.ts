@@ -1,6 +1,6 @@
 
 import { BibleVerse, SearchResult } from './types';
-import { callBibleApi, callBibleMySql } from './apiClient';
+import { queryBibleDatabase, callBibleApi } from './apiClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export const searchService = {
@@ -21,9 +21,9 @@ export const searchService = {
         }
       }
 
-      // Tente primeiro fazer a pesquisa no MySQL
+      // Tente primeiro fazer a pesquisa no Supabase
       try {
-        const response = await callBibleMySql('search', { query, versionId: bibleId, limit });
+        const response = await queryBibleDatabase('search', { query, versionId: bibleId, limit });
         
         if (response && response.verses && response.verses.length > 0) {
           return {
@@ -36,11 +36,11 @@ export const searchService = {
             total: response.total || response.verses.length
           };
         }
-      } catch (mysqlError) {
-        console.log('Erro ao pesquisar no MySQL, usando API:', mysqlError);
+      } catch (searchError) {
+        console.log('Erro ao pesquisar no Supabase, usando API:', searchError);
       }
 
-      // Se não conseguir do MySQL, usa a API
+      // Se não conseguir do Supabase, usa a API
       const data = await callBibleApi('/search', { bibleId, query, limit });
       
       return {
