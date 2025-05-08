@@ -1,6 +1,4 @@
 
-# A string used to distinguish different Supabase projects on the same host. Defaults to the
-# working directory name when running `supabase init`.
 project_id = "nkhgdoyzdlyixuaryfpa"
 
 [api]
@@ -23,10 +21,6 @@ immutable = false
 id = "bucket1"
 name = "bucket1"
 
-# [jwt-validator]
-# enable discovery how to refresh it
-# enable the login dialog
-
 [storage]
 enabled = true
 
@@ -37,4 +31,7 @@ enabled = true
 verify_jwt = false
 
 [functions.bible-import]
+verify_jwt = false
+
+[functions.bible-mysql]
 verify_jwt = false

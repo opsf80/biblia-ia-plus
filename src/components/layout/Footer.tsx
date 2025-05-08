@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#4d66c8] text-white py-8">
+    <footer className="bg-[#1A1F2C] text-white py-8">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -53,7 +53,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-200/20 mt-8 pt-6 text-sm text-gray-200 text-center">
+        <div className="border-t border-gray-700 mt-8 pt-6 text-sm text-gray-300 text-center">
           &copy; {new Date().getFullYear()} BíbliaIA+ - Todos os direitos reservados.
         </div>
       </div>

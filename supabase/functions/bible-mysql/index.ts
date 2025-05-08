@@ -35,7 +35,7 @@ serve(async (req) => {
         result = await getVersions(client);
         break;
       case 'getBooks':
-        result = await getBooks(client, params.versionId);
+        result = await getBooks(client, params.language);
         break;
       case 'getChapters':
         result = await getChapters(client, params.bookId);
@@ -83,59 +83,76 @@ async function getVersions(client: Client): Promise<any[]> {
   return result;
 }
 
-// Função para obter todos os livros de uma versão
-async function getBooks(client: Client, versionId: string): Promise<any[]> {
-  // Ajuste a consulta conforme o esquema do seu banco de dados
+// Função para obter todos os livros de uma linguagem específica (pt ou en)
+async function getBooks(client: Client, language: string): Promise<any[]> {
+  let tableName = language === 'pt' ? 'tbbiblia_pt' : 'tbbiblia_en';
+  
+  // Select distinct books from the appropriate table
   const result = await client.query(`
-    SELECT id, name, abbreviation, testament, chapter_count 
-    FROM bible_books 
-    WHERE version_id = ? 
-    ORDER BY position
-  `, [versionId]);
+    SELECT DISTINCT liv, livro
+    FROM ${tableName}
+    ORDER BY CAST(liv AS UNSIGNED)
+  `);
   
   return result;
 }
 
 // Função para obter todos os capítulos de um livro
 async function getChapters(client: Client, bookId: string): Promise<any[]> {
-  // Ajuste a consulta conforme o esquema do seu banco de dados
+  // Adjust the query based on the table schema
   const result = await client.query(`
-    SELECT id, number 
-    FROM bible_chapters 
-    WHERE book_id = ? 
-    ORDER BY number
+    SELECT DISTINCT cap as number, liv as book_id
+    FROM tbbiblia_pt
+    WHERE liv = ?
+    ORDER BY CAST(cap AS UNSIGNED)
   `, [bookId]);
   
-  return result;
+  return result.map((chapter: any) => ({
+    id: `${chapter.book_id}-${chapter.number}`,
+    number: chapter.number,
+    book_id: chapter.book_id
+  }));
 }
 
 // Função para obter todos os versículos de um capítulo
 async function getVerses(client: Client, chapterId: string): Promise<any[]> {
-  // Ajuste a consulta conforme o esquema do seu banco de dados
-  const result = await client.query(`
-    SELECT id, number, text, reference 
-    FROM bible_verses 
-    WHERE chapter_id = ? 
-    ORDER BY number
-  `, [chapterId]);
+  // Split the chapter ID to get book ID and chapter number
+  const [bookId, chapterNumber] = chapterId.split('-');
   
-  return result;
+  // Adjust the query based on the table schema
+  const result = await client.query(`
+    SELECT id, liv, cap, ver, texto
+    FROM tbbiblia_pt
+    WHERE liv = ? AND cap = ?
+    ORDER BY CAST(ver AS UNSIGNED)
+  `, [bookId, chapterNumber]);
+  
+  return result.map((verse: any) => ({
+    id: verse.id,
+    number: parseInt(verse.ver),
+    text: verse.texto,
+    reference: `${verse.liv}:${verse.cap}:${verse.ver}`
+  }));
 }
 
 // Função para pesquisar versículos
-async function searchVerses(client: Client, query: string, versionId: string, limit: number): Promise<any> {
-  // Ajuste a consulta conforme o esquema do seu banco de dados
+async function searchVerses(client: Client, query: string, language: string, limit: number): Promise<any> {
+  const tableName = language === 'en' ? 'tbbiblia_en' : 'tbbiblia_pt';
+  
+  // Adjust the query based on the table schema
   const result = await client.query(`
-    SELECT v.id, v.number, v.text, v.reference 
-    FROM bible_verses v
-    JOIN bible_chapters c ON v.chapter_id = c.id
-    JOIN bible_books b ON c.book_id = b.id
-    WHERE b.version_id = ? AND v.text LIKE ? 
+    SELECT id, liv, livro, cap, ver, texto
+    FROM ${tableName}
+    WHERE texto LIKE ?
     LIMIT ?
-  `, [versionId, `%${query}%`, limit]);
+  `, [`%${query}%`, limit]);
   
   return {
-    verses: result,
+    verses: result.map((verse: any) => ({
+      id: verse.id,
+      reference: `${verse.livro} ${verse.cap}:${verse.ver}`,
+      text: verse.texto
+    })),
     total: result.length
   };
 }

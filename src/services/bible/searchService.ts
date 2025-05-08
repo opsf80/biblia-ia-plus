@@ -21,7 +21,7 @@ export const searchService = {
         }
       }
 
-      // Tente primeiro fazer a pesquisa no Supabase
+      // Try to search in Supabase first
       try {
         const response = await queryBibleDatabase('search', { query, versionId: bibleId, limit });
         
@@ -37,10 +37,10 @@ export const searchService = {
           };
         }
       } catch (searchError) {
-        console.log('Erro ao pesquisar no Supabase, usando API:', searchError);
+        console.log('Error searching in Supabase, using API:', searchError);
       }
 
-      // Se não conseguir do Supabase, usa a API
+      // Fall back to API if not found in Supabase
       const data = await callBibleApi('/search', { bibleId, query, limit });
       
       return {

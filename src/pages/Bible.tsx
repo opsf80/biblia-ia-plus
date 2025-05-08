@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import BibleReader from '@/components/bible/BibleReader';
+import BibleBookList from '@/components/bible/BibleBookList';
 import { Button } from '@/components/ui/button';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, Book } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BIBLE_VERSIONS } from '@/services/bible';
@@ -24,9 +26,9 @@ const BiblePage = () => {
         description: "Iniciando importação dos dados da Bíblia. Isso pode levar alguns minutos..."
       });
       
-      // Importar dados para cada versão da Bíblia disponível
+      // Import data for each available Bible version
       for (const version of Object.values(BIBLE_VERSIONS)) {
-        // Importar livros
+        // Import books
         const { data: booksData, error: booksError } = await supabase.functions.invoke('bible-import', {
           body: { 
             action: 'import_books',
@@ -82,7 +84,27 @@ const BiblePage = () => {
             </Button>
           </div>
         </div>
-        <BibleReader />
+
+        <Tabs defaultValue="reader">
+          <TabsList className="mb-4">
+            <TabsTrigger value="reader">
+              <Book className="h-4 w-4 mr-2" />
+              Ler Bíblia
+            </TabsTrigger>
+            <TabsTrigger value="books">
+              <Book className="h-4 w-4 mr-2" />
+              Livros
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="reader">
+            <BibleReader />
+          </TabsContent>
+          
+          <TabsContent value="books">
+            <BibleBookList />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

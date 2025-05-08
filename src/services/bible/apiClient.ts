@@ -33,14 +33,35 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return versions;
         
       case 'getBooks':
-        const { data: books, error: booksError } = await supabase
-          .from('bible_books')
-          .select('*')
-          .eq('version_id', params?.versionId)
-          .order('position', { ascending: true });
-        
-        if (booksError) throw booksError;
-        return books;
+        if (params?.language === 'pt') {
+          // Get Portuguese books
+          const { data: ptBooks, error: ptError } = await supabase
+            .from('tbbiblia_pt')
+            .select('liv, livro')
+            .order('liv', { ascending: true });
+          
+          if (ptError) throw ptError;
+          return ptBooks;
+        } else if (params?.language === 'en') {
+          // Get English books
+          const { data: enBooks, error: enError } = await supabase
+            .from('tbbiblia_en')
+            .select('liv, livro')
+            .order('liv', { ascending: true });
+          
+          if (enError) throw enError;
+          return enBooks;
+        } else {
+          // Fallback to existing logic
+          const { data: books, error: booksError } = await supabase
+            .from('bible_books')
+            .select('*')
+            .eq('version_id', params?.versionId)
+            .order('position', { ascending: true });
+          
+          if (booksError) throw booksError;
+          return books;
+        }
         
       case 'getChapters':
         const { data: chapters, error: chaptersError } = await supabase
@@ -72,8 +93,8 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         if (searchError) throw searchError;
         return {
-          verses: searchResults,
-          total: searchResults.length
+          verses: searchResults || [],
+          total: searchResults?.length || 0
         };
         
       default:

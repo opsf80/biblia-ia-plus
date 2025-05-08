@@ -439,6 +439,60 @@ export type Database = {
         }
         Relationships: []
       }
+      tbbiblia_en: {
+        Row: {
+          cap: string | null
+          id: string
+          liv: string | null
+          livro: string | null
+          texto: string | null
+          ver: string | null
+        }
+        Insert: {
+          cap?: string | null
+          id: string
+          liv?: string | null
+          livro?: string | null
+          texto?: string | null
+          ver?: string | null
+        }
+        Update: {
+          cap?: string | null
+          id?: string
+          liv?: string | null
+          livro?: string | null
+          texto?: string | null
+          ver?: string | null
+        }
+        Relationships: []
+      }
+      tbbiblia_pt: {
+        Row: {
+          cap: string | null
+          id: string
+          liv: string | null
+          livro: string | null
+          texto: string | null
+          ver: string | null
+        }
+        Insert: {
+          cap?: string | null
+          id: string
+          liv?: string | null
+          livro?: string | null
+          texto?: string | null
+          ver?: string | null
+        }
+        Update: {
+          cap?: string | null
+          id?: string
+          liv?: string | null
+          livro?: string | null
+          texto?: string | null
+          ver?: string | null
+        }
+        Relationships: []
+      }
       verse_searches: {
         Row: {
           created_at: string | null
