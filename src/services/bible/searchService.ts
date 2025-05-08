@@ -25,7 +25,7 @@ export const searchService = {
       try {
         const response = await queryBibleDatabase('search', { query, versionId: bibleId, limit });
         
-        if (response && response.verses && response.verses.length > 0) {
+        if (response && typeof response === 'object' && 'verses' in response && response.verses.length > 0) {
           return {
             query,
             verses: response.verses.map((verse: any) => ({

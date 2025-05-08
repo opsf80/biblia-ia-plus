@@ -44,8 +44,15 @@ export const versionService = {
       const books = await queryBibleDatabase('getBooks', { language });
       
       if (books && Array.isArray(books)) {
+        // Type guard to ensure we're working with the correct structure
+        const hasLivAndLivro = (book: any): book is { liv: string; livro: string } => 
+          'liv' in book && 'livro' in book;
+        
+        // Filter books with the correct structure
+        const validBooks = books.filter(hasLivAndLivro);
+        
         // Group books by testament (1-39: Old Testament, 40+: New Testament)
-        const oldTestament = books
+        const oldTestament = validBooks
           .filter(book => parseInt(book.liv) <= 39)
           .map(book => ({
             id: book.liv,
@@ -53,7 +60,7 @@ export const versionService = {
             testament: 'Antigo'
           }));
           
-        const newTestament = books
+        const newTestament = validBooks
           .filter(book => parseInt(book.liv) > 39)
           .map(book => ({
             id: book.liv,

@@ -52,11 +52,11 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
           if (enError) throw enError;
           return enBooks;
         } else {
-          // Fallback to existing logic
+          // Fallback to existing logic - but with proper type handling
           const { data: books, error: booksError } = await supabase
             .from('bible_books')
             .select('*')
-            .eq('version_id', params?.versionId)
+            .eq('version_id', params?.versionId || '')
             .order('position', { ascending: true });
           
           if (booksError) throw booksError;
@@ -67,7 +67,7 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         const { data: chapters, error: chaptersError } = await supabase
           .from('bible_chapters')
           .select('*')
-          .eq('book_id', params?.bookId)
+          .eq('book_id', params?.bookId || '')
           .order('number', { ascending: true });
         
         if (chaptersError) throw chaptersError;
@@ -77,7 +77,7 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         const { data: verses, error: versesError } = await supabase
           .from('bible_verses')
           .select('*')
-          .eq('chapter_id', params?.chapterId)
+          .eq('chapter_id', params?.chapterId || '')
           .order('number', { ascending: true });
         
         if (versesError) throw versesError;
@@ -87,8 +87,8 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         const { data: searchResults, error: searchError } = await supabase
           .from('bible_verses')
           .select('*')
-          .textSearch('text', params?.query)
-          .eq('version_id', params?.versionId)
+          .textSearch('text', params?.query || '')
+          .eq('version_id', params?.versionId || '')
           .limit(params?.limit || 10);
         
         if (searchError) throw searchError;

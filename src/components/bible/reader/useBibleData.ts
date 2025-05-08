@@ -46,20 +46,40 @@ export const useBibleData = () => {
   const fetchBooks = async () => {
     setIsLoading(true);
     try {
-      // Buscar livros
+      // First try from the Bible API service
       const booksData = await bibleService.getBooks(selectedVersion);
       
       if (booksData.length === 0) {
-        // Se não encontrar, importar os livros
+        // If no books found through standard method, try fetching from tbbiblia
+        const ptBooks = await bibleService.getBibleBooks('pt');
+        if (ptBooks.length > 0) {
+          setBooks(ptBooks);
+          
+          // Find João or use the first book
+          const johnBook = ptBooks.find(book => 
+            book.name === 'João' || book.name === 'John' || book.name === 'João'
+          );
+          
+          if (johnBook) {
+            setSelectedBook(johnBook.name);
+            setSelectedBookId(johnBook.id);
+          } else if (ptBooks.length > 0) {
+            setSelectedBook(ptBooks[0].name);
+            setSelectedBookId(ptBooks[0].id);
+          }
+          
+          return;
+        }
+        
+        // If still nothing, try import
         await importBooks();
-        // Buscar novamente após importação
         const newBooksData = await bibleService.getBooks(selectedVersion);
         setBooks(newBooksData);
       } else {
         setBooks(booksData);
       }
       
-      // Encontrar João ou usar o primeiro livro
+      // Find João or use the first book
       const johnBook = booksData.find(book => 
         book.name === 'João' || book.name === 'John' || book.name === 'João'
       );
