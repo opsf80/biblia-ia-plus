@@ -52,7 +52,7 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
           if (enError) throw enError;
           return enBooks;
         } else {
-          // Fallback to existing logic - but with proper type handling
+          // Fallback to existing logic
           const { data: books, error: booksError } = await supabase
             .from('bible_books')
             .select('*')
@@ -84,6 +84,17 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return verses;
         
       case 'search':
+        // Fix: Explicitly define the return type to avoid infinite type instantiation
+        type SearchResult = {
+          verses: Array<{
+            id: string;
+            reference?: string;
+            text: string;
+            [key: string]: any;
+          }>;
+          total: number;
+        };
+        
         const { data: searchResults, error: searchError } = await supabase
           .from('bible_verses')
           .select('*')
@@ -93,10 +104,13 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         if (searchError) throw searchError;
         
-        return {
+        // Return with explicit type to help TypeScript
+        const result: SearchResult = {
           verses: searchResults || [],
           total: searchResults?.length || 0
         };
+        
+        return result;
         
       default:
         throw new Error(`Ação não implementada: ${action}`);
