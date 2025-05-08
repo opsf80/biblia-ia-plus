@@ -1,3 +1,4 @@
+
 import { BibleBook, BibleChapter, BibleVerse, HighlightColor } from './types';
 import { queryBibleDatabase, callBibleApi } from './apiClient';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +10,7 @@ export const contentService = {
       // Tente obter do Supabase
       const books = await queryBibleDatabase('getBooks', { versionId: bibleId });
       
-      if (books && books.length > 0) {
+      if (books && Array.isArray(books) && books.length > 0) {
         return books.map((book: any) => ({
           id: book.id,
           name: book.name,
@@ -41,7 +42,7 @@ export const contentService = {
       // Tente obter do Supabase
       const chapters = await queryBibleDatabase('getChapters', { bookId });
       
-      if (chapters && chapters.length > 0) {
+      if (chapters && Array.isArray(chapters) && chapters.length > 0) {
         return chapters.map((chapter: any) => ({
           id: chapter.id,
           number: chapter.number.toString(),
@@ -69,7 +70,7 @@ export const contentService = {
       // Tente obter do Supabase
       const verses = await queryBibleDatabase('getVerses', { chapterId });
       
-      if (verses && verses.length > 0) {
+      if (verses && Array.isArray(verses) && verses.length > 0) {
         return verses.map((verse: any) => ({
           id: verse.id,
           reference: verse.reference || '',

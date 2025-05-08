@@ -92,6 +92,7 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
           .limit(params?.limit || 10);
         
         if (searchError) throw searchError;
+        
         return {
           verses: searchResults || [],
           total: searchResults?.length || 0
