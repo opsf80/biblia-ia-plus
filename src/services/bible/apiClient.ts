@@ -100,8 +100,8 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         if (searchError) throw searchError;
         
-        // Create a plain object with mapped values
-        const verses = searchResults ? searchResults.map((verse: any) => ({
+        // Create a plain object with mapped values - renamed from 'verses' to 'searchVerses'
+        const searchVerses = searchResults ? searchResults.map((verse: any) => ({
           id: verse.id,
           reference: verse.reference,
           text: verse.text
@@ -109,8 +109,8 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         // Return plain object
         return {
-          verses,
-          total: verses.length
+          verses: searchVerses, // Keep the property name as 'verses' for API consistency
+          total: searchVerses.length
         };
         
       default:
