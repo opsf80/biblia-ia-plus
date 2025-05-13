@@ -84,22 +84,12 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return verses;
         
       case 'search':
-        // Fix: Define standalone interface types to avoid infinite instantiation
-        interface BibleVerseSearch {
+        // Define simple result types without recursive references or type instantiation
+        type SimpleVerse = {
           id: string;
-          reference?: string | null;
+          reference: string | null;
           text: string;
-        }
-        
-        // Create a separately defined result type that doesn't reference itself
-        interface SearchResultType {
-          verses: Array<{
-            id: string;
-            reference?: string | null;
-            text: string;
-          }>;
-          total: number;
-        }
+        };
         
         const { data: searchResults, error: searchError } = await supabase
           .from('bible_verses')
@@ -110,17 +100,18 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         if (searchError) throw searchError;
         
-        // Explicitly create the output object without type reference recursion
-        const result: SearchResultType = {
-          verses: searchResults ? searchResults.map((verse) => ({
-            id: verse.id,
-            reference: verse.reference,
-            text: verse.text
-          })) : [],
-          total: searchResults?.length || 0
-        };
+        // Create a plain object with mapped values
+        const verses = searchResults ? searchResults.map((verse: any) => ({
+          id: verse.id,
+          reference: verse.reference,
+          text: verse.text
+        })) : [];
         
-        return result;
+        // Return plain object
+        return {
+          verses,
+          total: verses.length
+        };
         
       default:
         throw new Error(`Ação não implementada: ${action}`);
