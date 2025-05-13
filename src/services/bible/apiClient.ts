@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Helper function to call Bible API via edge function
@@ -84,24 +83,20 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return verses;
         
       case 'search':
-        // Define simple result types without recursive references or type instantiation
-        type SimpleVerse = {
-          id: string;
-          reference: string | null;
-          text: string;
-        };
-        
         const { data: searchResults, error: searchError } = await supabase
           .from('bible_verses')
-          .select('id, reference, text')  // Explicitly select only needed columns
+          .select('id, reference, text')
           .textSearch('text', params?.query || '')
           .eq('version_id', params?.versionId || '')
-          .limit(params?.limit || 10);
+          .limit(params?.limit || 10) as { 
+            data: Array<{ id: string; reference: string | null; text: string }> | null; 
+            error: Error | null 
+          };
         
         if (searchError) throw searchError;
         
-        // Create a plain object with mapped values - renamed from 'verses' to 'searchVerses'
-        const searchVerses = searchResults ? searchResults.map((verse: any) => ({
+        // Map search results to a simpler structure
+        const searchVerses = searchResults ? searchResults.map((verse) => ({
           id: verse.id,
           reference: verse.reference,
           text: verse.text
@@ -109,7 +104,7 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         // Return plain object
         return {
-          verses: searchVerses, // Keep the property name as 'verses' for API consistency
+          verses: searchVerses,
           total: searchVerses.length
         };
         
