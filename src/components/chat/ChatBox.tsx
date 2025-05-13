@@ -30,7 +30,7 @@ const AI_RESPONSES = [
   }
 ];
 
-// N8n webhook URL - Updated
+// N8n webhook URL - Keeping the same URL as before
 const N8N_WEBHOOK_URL = 'https://n8n-n8n.taalus.easypanel.host/webhook/4f63aa06-2cac-4413-9f94-b50cd9b76fba';
 
 // Function to generate a response via n8n webhook
@@ -38,7 +38,7 @@ const generateResponse = async (question: string): Promise<string> => {
   try {
     console.log('Sending to webhook:', question);
     
-    // Send request to n8n webhook
+    // Send request to n8n webhook with improved error handling
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -50,21 +50,23 @@ const generateResponse = async (question: string): Promise<string> => {
       }),
     });
     
-    // Log the raw response for debugging
+    // Log the raw response status for debugging
     console.log('Webhook response status:', response.status);
     
     // Check if the request was successful
     if (!response.ok) {
-      throw new Error(`N8n webhook returned ${response.status}`);
+      const errorText = await response.text();
+      console.error(`N8n webhook error (${response.status}): ${errorText}`);
+      throw new Error(`N8n webhook returned ${response.status}: ${errorText}`);
     }
     
-    // Get the response text first to log it
+    // Get the response text first for logging
     const responseText = await response.text();
     console.log('Webhook raw response:', responseText);
     
     // Try to parse as JSON if possible
-    try {
-      if (responseText && responseText.trim()) {
+    if (responseText && responseText.trim()) {
+      try {
         const data = JSON.parse(responseText);
         console.log('Parsed webhook response:', data);
         
@@ -79,6 +81,7 @@ const generateResponse = async (question: string): Promise<string> => {
           if (data.message) return data.message;
           if (data.result) return data.result;
           if (data.output) return data.output;
+          if (data.text) return data.text;
           
           // If there's a property that looks like a string, return it
           for (const key in data) {
@@ -90,17 +93,12 @@ const generateResponse = async (question: string): Promise<string> => {
           // Return the whole JSON as string if nothing else worked
           return JSON.stringify(data);
         }
-      }
-      
-      // If we couldn't parse as JSON or find a suitable property, return the raw text
-      if (responseText && responseText.trim()) {
-        return responseText;
-      }
-    } catch (jsonError) {
-      console.log('Error parsing JSON response:', jsonError);
-      // If we couldn't parse as JSON, return the raw text
-      if (responseText && responseText.trim()) {
-        return responseText;
+      } catch (jsonError) {
+        console.log('Error parsing JSON response:', jsonError);
+        // If we couldn't parse as JSON, return the raw text
+        if (responseText && responseText.trim()) {
+          return responseText;
+        }
       }
     }
     
@@ -120,7 +118,8 @@ const generateResponse = async (question: string): Promise<string> => {
     }
   } catch (error) {
     console.error('Error sending to n8n webhook:', error);
-    throw error;
+    // Return a user-friendly error message
+    return "Desculpe, estou enfrentando dificuldades técnicas no momento. Por favor, tente novamente mais tarde ou reformule sua pergunta.";
   }
 };
 

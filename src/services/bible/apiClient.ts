@@ -84,34 +84,34 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return verses;
         
       case 'search':
-        // Define a simple interface for search results to avoid infinite type instantiation
-        interface SearchVerse {
+        // Fix: Define proper interface types to avoid infinite type instantiation
+        type BibleVerse = {
           id: string;
           reference?: string;
           text: string;
-        }
+        };
         
-        interface SearchResultType {
-          verses: SearchVerse[];
+        type SearchResultType = {
+          verses: BibleVerse[];
           total: number;
-        }
+        };
         
         const { data: searchResults, error: searchError } = await supabase
           .from('bible_verses')
-          .select('id, reference, text')  // Be explicit about which columns to select
+          .select('id, reference, text')  // Explicitly select only needed columns
           .textSearch('text', params?.query || '')
           .eq('version_id', params?.versionId || '')
           .limit(params?.limit || 10);
         
         if (searchError) throw searchError;
         
-        // Map the results to our defined interface
+        // Return with explicit typing to avoid infinite type instantiation
         const result: SearchResultType = {
-          verses: (searchResults || []).map(verse => ({
+          verses: searchResults ? searchResults.map((verse: any) => ({
             id: verse.id,
             reference: verse.reference,
             text: verse.text
-          })),
+          })) : [],
           total: searchResults?.length || 0
         };
         
