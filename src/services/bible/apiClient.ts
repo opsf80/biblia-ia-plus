@@ -84,17 +84,22 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return verses;
         
       case 'search':
-        // Fix: Define proper interface types to avoid infinite type instantiation
-        type BibleVerse = {
+        // Fix: Define standalone interface types to avoid infinite instantiation
+        interface BibleVerseSearch {
           id: string;
-          reference?: string;
+          reference?: string | null;
           text: string;
-        };
+        }
         
-        type SearchResultType = {
-          verses: BibleVerse[];
+        // Create a separately defined result type that doesn't reference itself
+        interface SearchResultType {
+          verses: Array<{
+            id: string;
+            reference?: string | null;
+            text: string;
+          }>;
           total: number;
-        };
+        }
         
         const { data: searchResults, error: searchError } = await supabase
           .from('bible_verses')
@@ -105,9 +110,9 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         
         if (searchError) throw searchError;
         
-        // Return with explicit typing to avoid infinite type instantiation
+        // Explicitly create the output object without type reference recursion
         const result: SearchResultType = {
-          verses: searchResults ? searchResults.map((verse: any) => ({
+          verses: searchResults ? searchResults.map((verse) => ({
             id: verse.id,
             reference: verse.reference,
             text: verse.text
