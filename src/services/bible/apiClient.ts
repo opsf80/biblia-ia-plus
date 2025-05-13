@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Helper function to call Bible API via edge function
@@ -83,20 +84,20 @@ export async function queryBibleDatabase(action: string, params?: Record<string,
         return verses;
         
       case 'search':
-        const { data: searchResults, error: searchError } = await supabase
+        // Using a simpler approach with explicit type casting
+        const query = supabase
           .from('bible_verses')
           .select('id, reference, text')
           .textSearch('text', params?.query || '')
           .eq('version_id', params?.versionId || '')
-          .limit(params?.limit || 10) as { 
-            data: Array<{ id: string; reference: string | null; text: string }> | null; 
-            error: Error | null 
-          };
+          .limit(params?.limit || 10);
+          
+        const { data: searchResults, error: searchError } = await query;
         
         if (searchError) throw searchError;
         
-        // Map search results to a simpler structure
-        const searchVerses = searchResults ? searchResults.map((verse) => ({
+        // Create a simple array of search results
+        const searchVerses = searchResults ? searchResults.map(verse => ({
           id: verse.id,
           reference: verse.reference,
           text: verse.text
